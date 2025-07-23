@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Audio Visualizer</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #0d1117;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        #visualizer-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        
+        .control-panel {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            background: rgba(13, 17, 23, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(48, 54, 61, 0.5);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .upload-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            background: rgba(13, 17, 23, 0.9);
+            border: 2px dashed rgba(48, 54, 61, 0.8);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            color: #c9d1d9;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area.dragover {
+            border-color: #58a6ff;
+            background: rgba(88, 166, 255, 0.1);
+        }
+        
+        .upload-area.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .play-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #238636;
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        
+        .play-button:hover {
+            background: #2ea043;
+        }
+        
+        .progress-bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(48, 54, 61, 0.8);
+            border-radius: 2px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #58a6ff;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        .volume-control {
+            width: 80px;
+            height: 4px;
+            background: rgba(48, 54, 61, 0.8);
+            border-radius: 2px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .volume-fill {
+            height: 100%;
+            background: #58a6ff;
+            width: 70%;
+        }
+        
+        .time-display {
+            font-size: 12px;
+            color: #7d8590;
+            font-family: 'SF Mono', Monaco, monospace;
+        }
+        
+        .freq-bars {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 2px;
+            z-index: 5;
+        }
+        
+        .freq-bar {
+            width: 3px;
+            background: linear-gradient(to top, #fd7e14, #e74c3c, #9b59b6, #3498db);
+            border-radius: 1px;
+            transition: height 0.1s ease;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="visualizer-canvas"></canvas>
+    
+    <!-- Upload Area -->
+    <div id="upload-area" class="upload-area">
+        <i class="fas fa-music text-4xl mb-4 text-blue-400"></i>
+        <h3 class="text-xl font-semibold mb-2">Drop your audio file here</h3>
+        <p class="text-gray-400 mb-4">or click to browse</p>
+        <input type="file" id="audio-input" accept="audio/*" class="hidden">
+        <button onclick="document.getElementById('audio-input').click()" 
+                class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
+            Choose File
+        </button>
+    </div>
+    
+    <!-- Control Panel -->
+    <div id="control-panel" class="control-panel hidden">
+        <button id="play-pause-btn" class="play-button">
+            <i class="fas fa-play"></i>
+        </button>
+        
+        <div class="progress-bar" id="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        
+        <div class="time-display">
+            <span id="current-time">0:00</span> / <span id="total-time">0:00</span>
+        </div>
+        
+        <i class="fas fa-volume-up text-gray-400"></i>
+        <div class="volume-control" id="volume-control">
+            <div class="volume-fill" id="volume-fill"></div>
+        </div>
+    </div>
+    
+    <!-- Frequency Bars -->
+    <div id="freq-bars" class="freq-bars hidden"></div>
+    
+    <audio id="audio-element" style="display: none;"></audio>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
+        class AudioVisualizer {
+            constructor() {
+                this.canvas = document.getElementById('visualizer-canvas');
+                this.audioElement = document.getElementById('audio-element');
+                this.uploadArea = document.getElementById('upload-area');
+                this.controlPanel = document.getElementById('control-panel');
+                this.freqBars = document.getElementById('freq-bars');
+                
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.particles = null;
+                this.audioContext = null;
+                this.analyser = null;
+                this.dataArray = null;
+                this.isPlaying = false;
+                this.particleCount = 2000;
+                
+                this.init();
+                this.setupEventListeners();
+            }
+
+            init() {
+                // Set up Three.js scene
+                this.scene = new THREE.Scene();
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                this.renderer = new THREE.WebGLRenderer({ 
+                    canvas: this.canvas, 
+                    alpha: true, 
+                    antialias: true 
+                });
+                
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setClearColor(0x0d1117, 1);
+                
+                this.camera.position.z = 100;
+                
+                // Create particle system
+                this.createParticleSystem();
+                
+                // Create frequency bars
+                this.createFrequencyBars();
+                
+                // Start render loop
+                this.animate();
+                
+                // Handle window resize
+                window.addEventListener('resize', () => {
+                    this.camera.aspect = window.innerWidth / window.innerHeight;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(window.innerWidth, window.innerHeight);
+                });
+            }
+
+            createParticleSystem() {
+                const geometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(this.particleCount * 3);
+                const colors = new Float32Array(this.particleCount * 3);
+                const sizes = new Float32Array(this.particleCount);
+                
+                for (let i = 0; i < this.particleCount; i++) {
+                    const i3 = i * 3;
+                    
+                    // Position particles in layers like GitLens
+                    const layer = Math.floor(i / (this.particleCount / 4));
+                    const y = (layer - 1.5) * 30;
+                    
+                    positions[i3] = (Math.random() - 0.5) * 200;
+                    positions[i3 + 1] = y + (Math.random() - 0.5) * 20;
+                    positions[i3 + 2] = (Math.random() - 0.5) * 100;
+                    
+                    // Color based on layer
+                    const hue = layer * 0.25;
+                    const color = new THREE.Color().setHSL(hue, 0.8, 0.6);
+                    colors[i3] = color.r;
+                    colors[i3 + 1] = color.g;
+                    colors[i3 + 2] = color.b;
+                    
+                    sizes[i] = Math.random() * 3 + 1;
+                }
+                
+                geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+                
+                const material = new THREE.ShaderMaterial({
+                    uniforms: {
+                        time: { value: 0 },
+                        audioData: { value: 0 }
+                    },
+                    vertexShader: `
+                        attribute float size;
+                        attribute vec3 color;
+                        varying vec3 vColor;
+                        uniform float time;
+                        uniform float audioData;
+                        
+                        void main() {
+                            vColor = color;
+                            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                            
+                            // Audio-reactive scaling
+                            float audioEffect = audioData * 0.5 + 0.5;
+                            gl_PointSize = size * audioEffect * (300.0 / -mvPosition.z);
+                            gl_Position = projectionMatrix * mvPosition;
+                        }
+                    `,
+                    fragmentShader: `
+                        varying vec3 vColor;
+                        
+                        void main() {
+                            float dist = length(gl_PointCoord - vec2(0.5));
+                            if (dist > 0.5) discard;
+                            
+                            float alpha = 1.0 - (dist * 2.0);
+                            gl_FragColor = vec4(vColor, alpha * 0.8);
+                        }
+                    `,
+                    transparent: true,
+                    vertexColors: true
+                });
+                
+                this.particles = new THREE.Points(geometry, material);
+                this.scene.add(this.particles);
+            }
+
+            createFrequencyBars() {
+                for (let i = 0; i < 64; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'freq-bar';
+                    bar.style.height = '4px';
+                    this.freqBars.appendChild(bar);
+                }
+            }
+
+            setupEventListeners() {
+                const audioInput = document.getElementById('audio-input');
+                const playPauseBtn = document.getElementById('play-pause-btn');
+                const progressBar = document.getElementById('progress-bar');
+                const volumeControl = document.getElementById('volume-control');
+                
+                // File upload
+                audioInput.addEventListener('change', (e) => this.handleFileUpload(e));
+                
+                // Drag and drop
+                this.uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    this.uploadArea.classList.add('dragover');
+                });
+                
+                this.uploadArea.addEventListener('dragleave', () => {
+                    this.uploadArea.classList.remove('dragover');
+                });
+                
+                this.uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    this.uploadArea.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        this.loadAudioFile(files[0]);
+                    }
+                });
+                
+                // Play/pause
+                playPauseBtn.addEventListener('click', () => this.togglePlayPause());
+                
+                // Progress bar
+                progressBar.addEventListener('click', (e) => {
+                    const rect = progressBar.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const percentage = clickX / rect.width;
+                    this.audioElement.currentTime = this.audioElement.duration * percentage;
+                });
+                
+                // Volume control
+                volumeControl.addEventListener('click', (e) => {
+                    const rect = volumeControl.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const percentage = clickX / rect.width;
+                    this.audioElement.volume = percentage;
+                    document.getElementById('volume-fill').style.width = percentage * 100 + '%';
+                });
+                
+                // Audio events
+                this.audioElement.addEventListener('loadedmetadata', () => {
+                    document.getElementById('total-time').textContent = this.formatTime(this.audioElement.duration);
+                });
+                
+                this.audioElement.addEventListener('timeupdate', () => {
+                    const progress = (this.audioElement.currentTime / this.audioElement.duration) * 100;
+                    document.getElementById('progress-fill').style.width = progress + '%';
+                    document.getElementById('current-time').textContent = this.formatTime(this.audioElement.currentTime);
+                });
+                
+                this.audioElement.addEventListener('ended', () => {
+                    this.isPlaying = false;
+                    playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+                });
+            }
+
+            async handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.loadAudioFile(file);
+                }
+            }
+
+            async loadAudioFile(file) {
+                try {
+                    const url = URL.createObjectURL(file);
+                    this.audioElement.src = url;
+                    
+                    // Setup audio context
+                    if (!this.audioContext) {
+                        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        this.analyser = this.audioContext.createAnalyser();
+                        this.analyser.fftSize = 256;
+                        
+                        const source = this.audioContext.createMediaElementSource(this.audioElement);
+                        source.connect(this.analyser);
+                        this.analyser.connect(this.audioContext.destination);
+                        
+                        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                    }
+                    
+                    // Show controls
+                    this.uploadArea.classList.add('hidden');
+                    this.controlPanel.classList.remove('hidden');
+                    this.freqBars.classList.remove('hidden');
+                    
+                } catch (error) {
+                    console.error('Error loading audio file:', error);
+                    alert('Failed to load audio file. Please try a different file.');
+                }
+            }
+
+            async togglePlayPause() {
+                if (!this.audioElement.src) return;
+                
+                if (this.audioContext && this.audioContext.state === 'suspended') {
+                    await this.audioContext.resume();
+                }
+                
+                if (this.isPlaying) {
+                    this.audioElement.pause();
+                    this.isPlaying = false;
+                    document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-play"></i>';
+                } else {
+                    await this.audioElement.play();
+                    this.isPlaying = true;
+                    document.getElementById('play-pause-btn').innerHTML = '<i class="fas fa-pause"></i>';
+                }
+            }
+
+            formatTime(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                if (this.analyser && this.isPlaying) {
+                    this.analyser.getByteFrequencyData(this.dataArray);
+                    
+                    // Update particles based on audio
+                    const avgFrequency = this.dataArray.reduce((a, b) => a + b) / this.dataArray.length;
+                    const normalizedAudio = avgFrequency / 255;
+                    
+                    if (this.particles && this.particles.material.uniforms) {
+                        this.particles.material.uniforms.time.value += 0.01;
+                        this.particles.material.uniforms.audioData.value = normalizedAudio;
+                        
+                        // Rotate particles based on audio
+                        this.particles.rotation.y += normalizedAudio * 0.002;
+                        
+                        // Update particle colors based on frequency ranges
+                        const colors = this.particles.geometry.attributes.color.array;
+                        const positions = this.particles.geometry.attributes.position.array;
+                        
+                        for (let i = 0; i < this.particleCount; i++) {
+                            const i3 = i * 3;
+                            const layer = Math.floor(i / (this.particleCount / 4));
+                            const freqIndex = Math.floor((layer / 4) * this.dataArray.length);
+                            const intensity = this.dataArray[freqIndex] / 255;
+                            
+                            // Update colors based on frequency intensity
+                            const baseHue = layer * 0.25;
+                            const color = new THREE.Color().setHSL(baseHue, 0.8, 0.3 + intensity * 0.7);
+                            colors[i3] = color.r;
+                            colors[i3 + 1] = color.g;
+                            colors[i3 + 2] = color.b;
+                            
+                            // Slight position animation
+                            positions[i3 + 1] += Math.sin(Date.now() * 0.001 + i * 0.01) * intensity * 0.5;
+                        }
+                        
+                        this.particles.geometry.attributes.color.needsUpdate = true;
+                        this.particles.geometry.attributes.position.needsUpdate = true;
+                    }
+                    
+                    // Update frequency bars
+                    const bars = this.freqBars.children;
+                    for (let i = 0; i < bars.length && i < this.dataArray.length; i++) {
+                        const height = (this.dataArray[i] / 255) * 60 + 4;
+                        bars[i].style.height = height + 'px';
+                    }
+                }
+                
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        // Initialize the visualizer when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new AudioVisualizer();
+        });
+    </script>
+</body>
+</html>

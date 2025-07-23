@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GuitarTabz Feature Selector - Fixed Flip Cards</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --editorial-black: #0a0a0a;
+            --editorial-white: #fafafa;
+            --editorial-gray: #6b7280;
+            --editorial-accent: #d1d5db;
+        }
+
+        * {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--editorial-white);
+            color: var(--editorial-black);
+        }
+
+        .editorial-title {
+            font-family: 'Playfair Display', serif;
+            font-weight: 900;
+        }
+
+        .gradient-border {
+            background: linear-gradient(45deg, #000, #666, #000);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #000 0%, #333 50%, #000 100%);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #000, #666, #000);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .flip-card {
+            background-color: transparent;
+            perspective: 1000px;
+            height: 280px;
+        }
+
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+        }
+
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            border: 2px solid var(--editorial-black);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .flip-card-front {
+            background-color: var(--editorial-white);
+        }
+
+        .flip-card-back {
+            background-color: var(--editorial-black);
+            color: var(--editorial-white);
+            transform: rotateY(180deg);
+            overflow-y: auto;
+        }
+
+        .flip-card-back::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .flip-card-back::-webkit-scrollbar-track {
+            background: #333;
+        }
+
+        .flip-card-back::-webkit-scrollbar-thumb {
+            background: #666;
+            border-radius: 2px;
+        }
+
+        .category-section {
+            margin-bottom: 3rem;
+        }
+
+        .section-divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--editorial-black), transparent);
+            margin: 2rem 0;
+        }
+
+        .feature-checkbox {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 20px;
+            height: 20px;
+            z-index: 10;
+        }
+
+        .selected-indicator {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--editorial-black);
+            color: var(--editorial-white);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            z-index: 10;
+        }
+
+        .control-panel {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            backdrop-filter: blur(10px);
+            background: rgba(250, 250, 250, 0.95);
+            border-bottom: 2px solid var(--editorial-black);
+        }
+
+        .export-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .difficulty-easy { border-left: 4px solid #10b981; }
+        .difficulty-medium { border-left: 4px solid #f59e0b; }
+        .difficulty-hard { border-left: 4px solid #ef4444; }
+
+        .timeline-short { color: #10b981; }
+        .timeline-medium { color: #f59e0b; }
+        .timeline-long { color: #ef4444; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <header class="gradient-bg text-white py-8">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="editorial-title text-5xl md:text-7xl mb-4">GuitarTabz</h1>
+            <p class="text-xl md:text-2xl font-light">Feature Enhancement Selector</p>
+            <div class="mt-4 text-lg">
+                <span class="opacity-75">64 Features • 13 Categories • Interactive Selection</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="control-panel py-4">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <button id="selectAllBtn" class="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 transition-colors">
+                        <i class="fas fa-check-square mr-2"></i>Select All
+                    </button>
+                    <button id="deselectAllBtn" class="px-4 py-2 border-2 border-black text-black rounded hover:bg-black hover:text-white transition-colors">
+                        <i class="fas fa-square mr-2"></i>Deselect All
+                    </button>
+                </div>
+                <div class="flex items-center gap-4">
+                    <select id="categoryFilter" class="px-3 py-2 border-2 border-black rounded">
+                        <option value="all">All Categories</option>
+                        <option value="practice">Real-Time Practice</option>
+                        <option value="gamification">Gamification</option>
+                        <option value="ai">AI Intelligence</option>
+                        <option value="theory">Music Theory</option>
+                        <option value="social">Social Features</option>
+                        <option value="content">Content Creation</option>
+                        <option value="platform">Platform Integration</option>
+                        <option value="mobile">Mobile Optimization</option>
+                        <option value="analytics">Analytics</option>
+                        <option value="specialized">Specialized Features</option>
+                        <option value="monetization">Monetization</option>
+                        <option value="technical">Technical Enhancements</option>
+                        <option value="unique">Unique Differentiators</option>
+                    </select>
+                    <div class="text-lg font-semibold">
+                        Selected: <span id="selectedCount" class="gradient-text">0</span>
+                    </div>
+                    <button id="exportBtn" class="export-btn px-6 py-2 gradient-bg text-white rounded hover:opacity-90 transition-opacity" disabled>
+                        <i class="fas fa-download mr-2"></i>Export Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="container mx-auto px-4 py-8">
+        <section class="category-section" data-category="practice">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Real-Time Practice Enhancement</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="practice-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="gamification">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Gamification & Engagement</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="gamification-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="ai">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">AI Intelligence</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="ai-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="theory">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Music Theory Tools</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="theory-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="social">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Social & Collaboration</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="social-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="content">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Content Creation</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="content-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="platform">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Platform Integration</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="platform-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="mobile">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Mobile Optimization</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="mobile-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="analytics">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Analytics & Insights</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="analytics-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="specialized">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Specialized Features</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="specialized-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="monetization">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Monetization Opportunities</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="monetization-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="technical">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Technical Enhancements</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="technical-features"></div>
+            <div class="section-divider"></div>
+        </section>
+
+        <section class="category-section" data-category="unique">
+            <h2 class="editorial-title text-3xl mb-6 gradient-text">Unique Differentiators</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="unique-features"></div>
+        </section>
+    </main>
+
+    <script>
+        // Feature data
+        const featuresData = {
+            practice: [
+                {
+                    id: 'smart_practice_ai',
+                    name: 'Smart Practice Session AI',
+                    brief: 'AI identifies problem areas and generates targeted exercises',
+                    description: 'Advanced AI system that analyzes your playing patterns, identifies specific weaknesses, and automatically generates personalized practice exercises. Uses machine learning to adapt difficulty and focus areas based on your progress.',
+                    difficulty: 'Medium',
+                    timeline: '6-8 weeks',
+                    requirements: ['Supabase AI/ML', 'Web Audio API', 'TensorFlow.js'],
+                    impact: 'High - Personalized learning acceleration'
+                },
+                {
+                    id: 'progressive_difficulty',
+                    name: 'Progressive Difficulty Engine',
+                    brief: 'AI adjusts challenge level to maintain flow state',
+                    description: 'Intelligent difficulty adjustment system that monitors your performance and emotional state to keep you in the optimal learning zone. Prevents frustration and boredom by dynamically scaling challenges.',
+                    difficulty: 'Hard',
+                    timeline: '8-12 weeks',
+                    requirements: ['Machine Learning', 'User Analytics', 'Psychological Modeling'],
+                    impact: 'Very High - Optimal learning experience'
+                },
+                {
+                    id: 'loop_pedal_simulator',
+                    name: 'Loop Pedal Simulator',
+                    brief: 'Practice difficult sections on repeat',
+                    description: 'Virtual loop station that allows you to isolate and repeat challenging song sections. Includes tempo adjustment, layering capabilities, and automatic loop detection based on chord progressions.',
+                    difficulty: 'Easy',
+                    timeline: '2-3 weeks',
+                    requirements: ['Web Audio API', 'Audio Buffer Management'],
+                    impact: 'Medium - Enhanced practice efficiency'
+                },
+                {
+                    id: 'smart_metronome',
+                    name: 'Smart Metronome with Song Sync',
+                    brief: 'Chord-aware tempo with accent patterns',
+                    description: 'Intelligent metronome that syncs with song tempo, provides chord-specific accent patterns, and adapts to different time signatures. Includes visual and haptic feedback options.',
+                    difficulty: 'Easy',
+                    timeline: '3-4 weeks',
+                    requirements: ['Web Audio API', 'Tempo Detection', 'Tonal.js'],
+                    impact: 'Medium - Better timing and rhythm'
+                },
+                {
+                    id: 'practice_speed_control',
+                    name: 'Practice Speed Controls',
+                    brief: 'Slow down songs for learning difficult parts',
+                    description: 'Advanced audio processing that allows you to slow down or speed up songs without pitch distortion. Includes section markers, automatic tempo ramping, and practice session recording.',
+                    difficulty: 'Medium',
+                    timeline: '4-6 weeks',
+                    requirements: ['Web Audio API', 'Pitch Preservation', 'Audio Processing'],
+                    impact: 'High - Learn at comfortable pace'
+                },
+                {
+                    id: 'session_analytics',
+                    name: 'Practice Session Analytics',
+                    brief: 'Detailed practice insights and streak tracking',
+                    description: 'Comprehensive analytics dashboard showing practice time, accuracy trends, improvement metrics, and achievement milestones. Includes streak tracking, goal setting, and progress visualization.',
+                    difficulty: 'Medium',
+                    timeline: '5-7 weeks',
+                    requirements: ['Supabase Analytics', 'Data Visualization', 'Chart.js'],
+                    impact: 'High - Motivation and progress tracking'
+                }
+            ],
+            gamification: [
+                {
+                    id: 'music_theory_rpg',
+                    name: 'Music Theory RPG',
+                    brief: 'Turn learning into game progression',
+                    description: 'Role-playing game mechanics applied to music theory learning. Gain XP for chord mastery, unlock new scales and modes, join guilds for collaborative challenges, and progress through skill trees.',
+                    difficulty: 'Hard',
+                    timeline: '10-14 weeks',
+                    requirements: ['Game Engine', 'Progress System', 'Multiplayer Infrastructure'],
+                    impact: 'Very High - Gamified learning engagement'
+                },
+                {
+                    id: 'fret_battles',
+                    name: 'Fret Battles - Competitive Gaming',
+                    brief: 'Real-time multiplayer chord challenges',
+                    description: 'Competitive multiplayer platform where players battle in real-time chord challenges. Includes tournament modes, skill-based matchmaking, live streaming integration, and spectator features.',
+                    difficulty: 'Hard',
+                    timeline: '12-16 weeks',
+                    requirements: ['WebRTC', 'Real-time Multiplayer', 'Tournament System'],
+                    impact: 'High - Competitive engagement'
+                },
+                {
+                    id: 'achievement_system',
+                    name: 'Achievement System',
+                    brief: 'Unlock badges for milestones and challenges',
+                    description: 'Comprehensive achievement and badge system with hundreds of unlockable milestones. Includes rare achievements, seasonal challenges, and social sharing of accomplishments.',
+                    difficulty: 'Medium',
+                    timeline: '4-6 weeks',
+                    requirements: ['Achievement Engine', 'Badge System', 'Social Integration'],
+                    impact: 'Medium - Motivation and retention'
+                },
+                {
+                    id: 'practice_streaks',
+                    name: 'Practice Streak Tracking',
+                    brief: 'Daily practice motivation system',
+                    description: 'Advanced streak tracking system with flexible goals, streak recovery options, and motivational notifications. Includes streak challenges and community streak leaderboards.',
+                    difficulty: 'Easy',
+                    timeline: '2-3 weeks',
+                    requirements: ['Local Storage', 'Notification System', 'Analytics'],
+                    impact: 'High - Daily engagement habit formation'
+                },
+                {
+                    id: 'leaderboards',
+                    name: 'Community Leaderboards',
+                    brief: 'Compare progress with other users',
+                    description: 'Multi-tier leaderboard system with skill-based rankings, local/global competition, seasonal resets, and fair play monitoring. Includes friend comparisons and private group leaderboards.',
+                    difficulty: 'Medium',
+                    timeline: '5-7 weeks',
+                    requirements: ['Real-time Databases', 'Ranking Algorithms', 'Anti-cheat Systems'],
+                    impact: 'Medium - Social competition motivation'
+                }
+            ],
+            ai: [
+                {
+                    id: 'musical_dna',
+                    name: 'Musical DNA Personalization',
+                    brief: 'Learn unique playing patterns across platforms',
+                    description: 'Advanced AI that creates a unique musical profile by analyzing your playing style, preferences, and learning patterns across multiple platforms and sessions. Provides hyper-personalized recommendations.',
+                    difficulty: 'Hard',
+                    timeline: '10-14 weeks',
+                    requirements: ['Machine Learning', 'Pattern Recognition', 'Cross-platform Analytics'],
+                    impact: 'Very High - Unprecedented personalization'
+                },
+                {
+                    id: 'predictive_recommendations',
+                    name: 'Predictive Practice Recommendations',
+                    brief: 'AI suggests next songs and exercises to learn',
+                    description: 'Machine learning system that predicts optimal next learning steps based on your current skill level, musical interests, and learning velocity. Includes difficulty progression and style diversification.',
+                    difficulty: 'Hard',
+                    timeline: '8-12 weeks',
+                    requirements: ['Recommendation Engine', 'ML Models', 'User Behavior Analysis'],
+                    impact: 'High - Optimized learning path'
+                },
+                {
+                    id: 'weakness_recognition',
+                    name: 'Weakness Pattern Recognition',
+                    brief: 'Identify and target specific problem areas',
+                    description: 'AI system that identifies recurring technical weaknesses, chord transition problems, and timing issues. Automatically generates targeted exercises to address specific deficiencies.',
+                    difficulty: 'Medium',
+                    timeline: '6-8 weeks',
+                    requirements: ['Pattern Analysis', 'Exercise Generation', 'Performance Tracking'],
+                    impact: 'High - Targeted skill improvement'
+                },
+                {
+                    id: 'skill_assessment',
+                    name: 'Automated Skill Level Assessment',
+                    brief: 'AI-powered proficiency testing and certification',
+                    description: 'Comprehensive skill assessment system that evaluates technical proficiency, musical knowledge, and playing ability. Provides detailed skill reports and improvement recommendations.',
+                    difficulty: 'Hard',
+                    timeline: '10-12 weeks',
+                    requirements: ['Assessment Algorithms', 'Skill Modeling', 'Certification System'],
+                    impact: 'High - Objective skill measurement'
+                },
+                {
+                    id: 'progress_prediction',
+                    name: 'Progress Prediction Modeling',
+                    brief: 'Forecast improvement timelines and milestones',
+                    description: 'Predictive analytics that forecasts your learning trajectory, estimates time to master specific skills, and identifies potential plateaus before they occur. Includes goal timeline adjustments.',
+                    difficulty: 'Hard',
+                    timeline: '8-10 weeks',
+                    requirements: ['Predictive Modeling', 'Statistical Analysis', 'Goal Tracking'],
+                    impact: 'Medium - Realistic expectation setting'
+                }
+            ],
+            theory: [
+                {
+                    id: 'chord_progression_studio',
+                    name: 'Chord Progression Studio',
+                    brief: 'Visual chord builder with real-time audio playback',
+                    description: 'Interactive chord progression builder with drag-and-drop interface, real-time audio preview, MIDI export, and sharing capabilities. Includes common progression templates and theory analysis.',
+                    difficulty: 'Medium',
+                    timeline: '6-8 weeks',
+                    requirements: ['Web Audio API', 'MIDI Export', 'Tonal.js', 'Visual Editor'],
+                    impact: 'High - Creative composition tool'
+                },
+                {
+                    id: 'jazz_harmony_decoder',
+                    name: 'Jazz Harmony Decoder',
+                    brief: 'Advanced chord analysis and substitutions',
+                    description: 'Sophisticated jazz theory analysis tool that identifies complex chord functions, suggests substitutions, and explains harmonic relationships. Includes reharmonization suggestions and voice leading analysis.',
+                    difficulty: 'Hard',
+                    timeline: '10-14 weeks',
+                    requirements: ['Advanced Music Theory', 'Jazz Algorithm', 'Harmonic Analysis'],
+                    impact: 'High - Advanced music theory education'
+                },
+                {
+                    id: 'nashville_numbers',
+                    name: 'Nashville Numbers System',
+                    brief: 'Convert chord charts to Nashville notation',
+                    description: 'Automatic conversion between chord symbols and Nashville Number System notation. Includes transposition tools, chart formatting, and session musician collaboration features.',
+                    difficulty: 'Medium',
+                    timeline: '4-6 weeks',
+                    requirements: ['Music Theory Engine', 'Chart Formatting', 'Transposition Logic'],
+                    impact: 'Medium - Professional musician workflow'
+                },
+                {
+                    id: 'scale_practice_generator',
+                    name: 'Scale Practice Generator',
+                    brief: 'Targeted scale exercises and patterns',
+                    description: 'Intelligent scale practice system that generates exercises based on modes, positions, and difficulty levels. Includes pattern variations, timing challenges, and progress tracking.',
+                    difficulty: 'Easy',
+                    timeline: '3-4 weeks',
+                    requirements: ['Scale Database', 'Exercise Generation', 'Practice Tracking'],
+                    impact: 'Medium - Systematic scale mastery'
+                },
+                {
+                    id: 'circle_of_fifths',
+                    name: 'Interactive Circle of Fifths',
+                    brief: 'Visual music theory learning tool',
+                    description: 'Dynamic, interactive Circle of Fifths with key relationships, chord progressions, and scale patterns. Includes educational modes, quiz features, and practical application exercises.',
+                    difficulty: 'Medium',
+                    timeline: '4-5 weeks',
+                    requirements: ['Interactive Visualization', 'Music Theory Logic', 'Educational Content'],
+                    impact: 'Medium - Music theory comprehension'
+                }
+            ],
+            social: [
+                {
+                    id: 'virtual_jam_sessions',
+                    name: 'Virtual Jam Sessions',
+                    brief: 'Real-time online playing with others',
+                    description: 'Low-latency online jamming platform with synchronized chord progressions, multiple instrument support, recording capabilities, and session matching based on skill level and musical preferences.',
+                    difficulty: 'Very Hard',
+                    timeline: '16-20 weeks',
+                    requirements: ['WebRTC', 'Low-latency Audio', 'Session Management', 'Real-time Sync'],
+                    impact: 'Very High - Revolutionary social music experience'
+                },
+                {
+                    id: 'band_practice_manager',
+                    name: 'Band Practice Manager',
+                    brief: 'Setlist coordination and scheduling',
+                    description: 'Comprehensive band management platform with shared setlists, practice scheduling, member progress tracking, and collaborative arrangement tools. Includes gig management and repertoire planning.',
+                    difficulty: 'Medium',
+                    timeline: '8-10 weeks',
+                    requirements: ['Collaboration Platform', 'Scheduling System', 'File Sharing'],
+                    impact: 'High - Band workflow optimization'
+                },
+                {
+                    id: 'music_theory_social',
+                    name: 'Music Theory Social Network',
+                    brief: 'Q&A community for musicians',
+                    description: 'Stack Overflow-style platform for music theory questions, chord progression sharing, arrangement collaboration, and peer learning. Includes reputation system and expert verification.',
+                    difficulty: 'Hard',
+                    timeline: '12-16 weeks',
+                    requirements: ['Community Platform', 'Q&A System', 'Reputation Engine', 'Content Moderation'],
+                    impact: 'High - Knowledge sharing community'
+                },
+                {
+                    id: 'teacher_student_dashboard',
+                    name: 'Teacher-Student Dashboard',
+                    brief: 'Progress tracking for music instructors',
+                    description: 'Comprehensive teaching platform with student progress monitoring, assignment creation, practice tracking, and performance analytics. Includes lesson planning and parent communication tools.',
+                    difficulty: 'Hard',
+                    timeline: '10-14 weeks',
+                    requirements: ['Multi-user Dashboard', 'Progress Tracking', 'Assignment System'],
+                    impact: 'High - Music education enhancement'
+                },
+                {
+                    id: 'practice_room_sharing',
+                    name: 'Collaborative Practice Spaces',
+                    brief: 'Virtual practice rooms for groups',
+                    description: 'Virtual practice rooms where groups can collaborate on songs, share chord charts, practice together, and track collective progress. Includes voice chat and synchronized playback.',
+                    difficulty: 'Hard',
+                    timeline: '10-12 weeks',
+                    requirements: ['Virtual Rooms', 'Group Collaboration', 'Synchronized Playback'],
+                    impact: 'Medium - Group practice facilitation'
+                }
+            ],
+            content: [
+                {
+                    id: 'tab_to_video',
+                    name: 'Tab-to-Video Generator',
+                    brief: 'Animated fretboard videos for social media',
+                    description: 'Automated video generation system that converts chord progressions and tabs into engaging animated fretboard videos. Perfect for YouTube tutorials, Instagram, and TikTok content creation.',
+                    difficulty: 'Hard',
+                    timeline: '10-14 weeks',
+                    requirements: ['Video Generation', 'Animation Engine', 'Fretboard Visualization'],
+                    impact: 'High - Content creator tool'
+                },
+                {
+                    id: 'practice_session_recording',
+                    name: 'Practice Session Recording',
+                    brief: 'Save and share practice sessions',
+                    description: 'High-quality practice session recording with synchronized chord charts, performance analytics, and sharing capabilities. Includes automatic highlights and progress comparison features.',
+                    difficulty: 'Medium',
+                    timeline: '6-8 weeks',
+                    requirements: ['Audio Recording', 'Session Sync', 'File Management'],
+                    impact: 'Medium - Practice documentation'
+                },
+                {
+                    id: 'chord_chart_generator',
+                    name: 'Professional Chord Chart Generator',
+                    brief: 'Create shareable chord charts and lead sheets',
+                    description: 'Professional-quality chord chart creation tool with multiple formatting options, lyric integration, transposition, and export capabilities. Includes collaboration features for songwriters.',
+                    difficulty: 'Medium',
+                    timeline: '5-7 weeks',
+                    requirements: ['Chart Formatting', 'PDF Export', 'Collaboration Tools'],
+                    impact: 'High - Professional musician workflow'
+                },
+                {
+                    id: 'tutorial_creation',
+                    name: 'Tutorial Creation Tools',
+                    brief: 'Make instructional content with integrated features',
+                    description: 'Comprehensive tutorial creation platform with screen recording, chord overlay, interactive elements, and publishing tools. Enables educators to create professional guitar instruction content.',
+                    difficulty: 'Hard',
+                    timeline: '12-16 weeks',
+                    requirements: ['Video Creation', 'Interactive Elements', 'Publishing Platform'],
+                    impact: 'High - Educational content creation'
+                }
+            ],
+            platform: [
+                {
+                    id: 'spotify_extension',
+                    name: 'Spotify Chord Extension',
+                    brief: 'Show chords for currently playing songs',
+                    description: 'Browser extension that displays chord progressions and guitar fingerings for songs playing on Spotify, Apple Music, and other streaming platforms. Includes real-time synchronization.',
+                    difficulty: 'Medium',
+                    timeline: '6-8 weeks',
+                    requirements: ['Browser Extension', 'Streaming API', 'Chord Database'],
+                    impact: 'Very High - Viral growth potential'
+                },
+                {
+                    id: 'discord_bot',
+                    name: 'Discord Music Bot++',
+                    brief: 'Advanced Discord bot with fretboard visualization',
+                    description: 'Sophisticated Discord bot that provides chord lookups, fretboard diagrams, scale information, and interactive music theory games directly in Discord servers.',
+                    difficulty: 'Medium',
+                    timeline: '4-6 weeks',
+                    requirements: ['Discord API', 'Bot Framework', 'Image Generation'],
+                    impact: 'High - Community engagement'
+                },
+                {
+                    id: 'twitch_integration',
+                    name: 'Twitch Stream Integration',
+                    brief: 'Live chord display for music streamers',
+                    description: 'Twitch overlay system that displays chord progressions, viewer requests, and interactive elements for music streamers. Includes chat integration and viewer participation features.',
+                    difficulty: 'Medium',
+                    timeline: '5-7 weeks',
+                    requirements: ['Twitch API', 'Overlay System', 'Chat Integration'],
+                    impact: 'Medium - Streamer tool market'
+                },
+                {
+                    id: 'daw_plugins',
+                    name: 'DAW Plugin Suite',
+                    brief: 'Integration with music production software',
+                    description: 'Native plugins for Logic Pro, Ableton Live, Pro Tools, and other DAWs. Provides real-time chord analysis, suggestion, and MIDI generation capabilities within the production environment.',
+                    difficulty: 'Very Hard',
+                    timeline: '20-24 weeks',
+                    requirements: ['Plugin Development', 'DAW APIs', 'MIDI Processing'],
+                    impact: 'High - Producer/composer market'
+                },
+                {
+                    id: 'youtube_enhancement',
+                    name: 'YouTube Chord Overlay',
+                    brief: 'Chord overlays on guitar instruction videos',
+                    description: 'Browser extension that analyzes YouTube guitar videos and overlays chord information, fretboard diagrams, and interactive elements. Includes community contributions and accuracy verification.',
+                    difficulty: 'Hard',
+                    timeline: '8-12 weeks',
+                    requirements: ['Video Analysis', 'Audio Processing', 'Browser Extension'],
+                    impact: 'High - Educational video enhancement'
+                }
+            ],
+            mobile: [
+                {
+                    id: 'voice_control',
+                    name: 'Voice-Controlled Practice',
+                    brief: 'Hands-free commands for practice sessions',
+                    description: 'Advanced voice recognition system for hands-free control during practice. Commands include chord lookups, metronome control, section repeats, and practice session management.',
+                    difficulty: 'Medium',
+                    timeline: '6-8 weeks',
+                    requirements: ['Web Speech API', 'Voice Recognition', 'Command Processing'],
+                    impact: 'High - Hands-free convenience'
+                },
+                {
+                    id: 'offline_practice',
+                    name: 'Offline Practice Mode',
+                    brief: 'Download songs and features for offline use',
+                    description: 'Progressive Web App with offline capabilities, allowing download of songs, chord charts, and practice features for use without internet connection. Includes sync when reconnected.',
+                    difficulty: 'Medium',
+                    timeline: '7-9 weeks',
+                    requirements: ['Service Workers', 'Offline Storage', 'Sync Mechanisms'],
+                    impact: 'High - Accessibility and convenience'
+                },
+                {
+                    id: 'apple_watch_integration',
+                    name: 'Apple Watch Integration',
+                    brief: 'Practice tracking and control on wrist',
+                    description: 'Apple Watch companion app with practice time tracking, metronome control, chord reminders, and achievement notifications. Includes haptic feedback for timing assistance.',
+                    difficulty: 'Hard',
+                    timeline: '10-12 weeks',
+                    requirements: ['WatchOS Development', 'Health Integration', 'Haptic Feedback'],
+                    impact: 'Medium - Wearable convenience'
+                },
+                {
+                    id: 'haptic_feedback',
+                    name: 'Advanced Haptic Feedback',
+                    brief: 'Vibration cues for timing and technique',
+                    description: 'Sophisticated haptic feedback system using device vibration to provide timing cues, chord change notifications, and technique correction signals. Customizable patterns and intensities.',
+                    difficulty: 'Easy',
+                    timeline: '3-4 weeks',
+                    requirements: ['Haptic API', 'Pattern Engine', 'Timing Synchronization'],
+                    impact: 'Medium - Tactile learning enhancement'
+                }
+            ],
+            analytics: [
+                {
+                    id: 'practice_efficiency',
+                    name: 'Practice Efficiency Analysis',
+                    brief: 'Optimize practice time effectiveness',
+                    description: 'Advanced analytics that analyze your practice patterns, identify the most effective practice methods, and suggest optimizations to maximize improvement per time invested.',
+                    difficulty: 'Hard',
+                    timeline: '8-10 weeks',
+                    requirements: ['Data Analytics', 'Efficiency Algorithms', 'Machine Learning'],
+                    impact: 'High - Time optimization'
+                },
+                {
+                    id: 'improvement_trajectory',
+                    name: 'Improvement Trajectory Modeling',
+                    brief: 'Data-driven progress tracking and prediction',
+                    description: 'Statistical modeling system that tracks skill development over time, identifies learning patterns, and predicts future progress. Includes plateau detection and breakthrough prediction.',
+                    difficulty: 'Hard',
+                    timeline: '10-12 weeks',
+                    requirements: ['Statistical Modeling', 'Predictive Analytics', 'Data Visualization'],
+                    impact: 'High - Progress insight and motivation'
+                },
+                {
+                    id: 'problem_area_heatmaps',
+                    name: 'Problem Area Heat Maps',
+                    brief: 'Visual representation of playing difficulties',
+                    description: 'Interactive heat map visualization showing your most challenging chord transitions, timing issues, and technical difficulties. Provides targeted practice recommendations for improvement.',
+                    difficulty: 'Medium',
+                    timeline: '5-7 weeks',
+                    requirements: ['Data Visualization', 'Heat Map Generation', 'Problem Detection'],
+                    impact: 'High - Visual learning insights'
+                },
+                {
+                    id: 'practice_session_recommendations',
+                    name: 'AI Practice Session Planning',
+                    brief: 'Intelligent practice routine generation',
+                    description: 'AI-powered practice session planner that creates optimal practice routines based on your goals, available time, current skill level, and learning preferences. Adapts based on session outcomes.',
+                    difficulty: 'Hard',
+                    timeline: '8-12 weeks',
+                    requirements: ['AI Planning', 'Session Optimization', 'Goal Management'],
+                    impact: 'High - Structured practice improvement'
+                },
+                {
+                    id: 'performance_comparison',
+                    name: 'Peer Performance Comparison',
+                    brief: 'Anonymous comparison with similar skill levels',
+                    description: 'Anonymous benchmarking system that compares your progress and performance metrics with other users of similar skill levels. Provides motivation and realistic goal setting.',
+                    difficulty: 'Medium',
+                    timeline: '6-8 weeks',
+                    requirements: ['Anonymous Analytics', 'Skill Matching', 'Benchmark Algorithms'],
+                    impact: 'Medium - Social motivation'
+                }
+            ],
+            specialized: [
+                {
+                    id: 'fingerstyle_patterns',
+                    name: 'Fingerstyle Pattern Library',
+                    brief: 'Specialized fingerpicking techniques and arrangements',
+                    description: 'Comprehensive library of fingerstyle patterns, techniques, and arrangements with interactive learning tools, slow-motion demonstrations, and progressive difficulty levels.',
+                    difficulty: 'Medium',
+                    timeline: '6-8 weeks',
+                    requirements: ['Pattern Database', 'Fingerpicking Analysis', 'Interactive Tutorials'],
+                    impact: 'High - Fingerstyle guitarist market'
+                },
+                {
+                    id: 'alternate_tunings',
+                    name: 'Alternate Tuning Support',
+                    brief: 'Beyond standard tuning chord recognition',
+                    description: 'Support for alternate tunings including DADGAD, Open G, Drop D, and custom tunings. Includes automatic chord recognition, transposition, and tuning-specific chord libraries.',
+                    difficulty: 'Hard',
+                    timeline: '8-12 weeks',
+                    requirements: ['Tuning Algorithms', 'Chord Recalculation', 'Audio Analysis'],
+                    impact: 'Medium - Advanced guitarist features'
+                },
+                {
+                    id: 'capo_position',
+                    name: 'Capo Position Calculator',
+                    brief: 'Automatic key transposition and chord adjustment',
+                    description: 'Intelligent capo position calculator that suggests optimal capo placements, automatically transposes chords, and provides alternative fingerings for easier chord changes.',
+                    difficulty: 'Easy',
+                    timeline: '3-4 weeks',
+                    requirements: ['Transposition Logic', 'Chord Optimization', 'Capo Algorithms'],
+                    impact: 'Medium - Practical playing tool'
+                },
+                {
+                    id: 'chord_substitution',
+                    name: 'Chord Substitution Engine',
+                    brief: 'Alternative voicings and progressive substitutions',
+                    description: 'Advanced chord substitution system that suggests alternative voicings, jazz substitutions, and progressive reharmonizations. Includes voice leading optimization and stylistic suggestions.',
+                    difficulty: 'Hard',
+                    timeline: '10-14 weeks',
+                    requirements: ['Advanced Music Theory', 'Substitution Algorithms', 'Voice Leading'],
+                    impact: 'High - Advanced harmonic creativity'
+                },
+                {
+                    id: 'rhythm_patterns',
+                    name: 'Rhythm Pattern Training',
+                    brief: 'Strumming pattern practice and analysis',
+                    description: 'Comprehensive rhythm training system with strumming pattern library, timing analysis, and interactive practice tools. Includes genre-specific patterns and difficulty progression.',
+                    difficulty: 'Medium',
+                    timeline: '5-7 weeks',
+                    requirements: ['Rhythm Analysis', 'Pattern Library', 'Timing Feedback'],
+                    impact: 'High - Rhythm skill development'
+                }
+            ],
+            monetization: [
+                {
+                    id: 'white_label_platform',
+                    name: 'White-Label Licensing',
+                    brief: 'License platform to music schools and institutions',
+                    description: 'White-label version of the platform that music schools, institutions, and private instructors can customize and deploy. Includes branding customization, curriculum management, and reporting tools.',
+                    difficulty: 'Hard',
+                    timeline: '12-16 weeks',
+                    requirements: ['Multi-tenant Architecture', 'Customization Engine', 'Enterprise Features'],
+                    impact: 'Very High - B2B revenue stream'
+                },
+                {
+                    id: 'api_marketplace',
+                    name: 'Music Analysis API Marketplace',
+                    brief: 'Sell music analysis capabilities as service',
+                    description: 'API marketplace offering chord analysis, key detection, tempo analysis, and other music intelligence services to developers and businesses. Includes usage analytics and billing.',
+                    difficulty: 'Medium',
+                    timeline: '8-10 weeks',
+                    requirements: ['API Gateway', 'Usage Tracking', 'Billing System'],
+                    impact: 'High - Developer revenue stream'
+                },
+                {
+                    id: 'premium_content',
+                    name: 'Premium Content Library',
+                    brief: 'Exclusive songs, lessons, and expert content',
+                    description: 'Premium subscription tier with exclusive content from professional guitarists, advanced techniques, masterclasses, and early access to new features. Includes content creator partnerships.',
+                    difficulty: 'Medium',
+                    timeline: '6-8 weeks',
+                    requirements: ['Content Management', 'Creator Platform', 'Subscription Tiers'],
+                    impact: 'High - Premium subscription revenue'
+                },
+                {
+                    id: 'virtual_coaching',
+                    name: 'AI Virtual Coaching Sessions',
+                    brief: 'Personalized one-on-one AI instruction',
+                    description: 'Premium AI coaching service that provides personalized instruction sessions, technique analysis, and real-time feedback. Includes progress tracking and adaptive curriculum.',
+                    difficulty: 'Very Hard',
+                    timeline: '16-20 weeks',
+                    requirements: ['Advanced AI', 'Natural Language Processing', 'Personalization Engine'],
+                    impact: 'Very High - High-value premium service'
+                },
+                {
+                    id: 'certification_system',
+                    name: 'Skill Certification Program',
+                    brief: 'Verified skill credentials and testing',
+                    description: 'Professional certification program with standardized skill testing, verified credentials, and industry recognition. Includes partnerships with music institutions and employers.',
+                    difficulty: 'Hard',
+                    timeline: '12-16 weeks',
+                    requirements: ['Assessment System', 'Certification Logic', 'Industry Partnerships'],
+                    impact: 'High - Professional credential revenue'
+                }
+            ],
+            technical: [
+                {
+                    id: 'webassembly_engine',
+                    name: 'WebAssembly Audio Engine',
+                    brief: 'Ultra-fast browser audio processing',
+                    description: 'High-performance WebAssembly-based audio processing engine for real-time chord detection and analysis entirely in the browser. Eliminates server round-trips and reduces latency.',
+                    difficulty: 'Very Hard',
+                    timeline: '16-24 weeks',
+                    requirements: ['WebAssembly', 'C/C++', 'Audio DSP', 'Browser Optimization'],
+                    impact: 'High - Performance competitive advantage'
+                },
+                {
+                    id: 'progressive_web_app',
+                    name: 'Progressive Web App',
+                    brief: 'Offline-first mobile experience with app-like features',
+                    description: 'Full PWA implementation with offline capabilities, push notifications, background sync, and native app-like experience. Includes automatic updates and cross-platform compatibility.',
+                    difficulty: 'Medium',
+                    timeline: '8-10 weeks',
+                    requirements: ['Service Workers', 'Web App Manifest', 'Offline Storage'],
+                    impact: 'High - Mobile user experience'
+                },
+                {
+                    id: 'realtime_collaboration',
+                    name: 'Real-Time Collaboration Engine',
+                    brief: 'Multi-user editing and synchronized practice',
+                    description: 'Advanced real-time collaboration system enabling simultaneous editing of chord charts, synchronized practice sessions, and multi-user interactions with conflict resolution.',
+                    difficulty: 'Very Hard',
+                    timeline: '14-18 weeks',
+                    requirements: ['WebRTC', 'Operational Transform', 'Conflict Resolution'],
+                    impact: 'High - Collaborative features foundation'
+                },
+                {
+                    id: 'audio_quality_optimization',
+                    name: 'Audio Quality Enhancement',
+                    brief: 'Noise reduction and audio enhancement algorithms',
+                    description: 'Advanced audio preprocessing with noise reduction, automatic gain control, and audio enhancement to improve chord detection accuracy in various acoustic environments.',
+                    difficulty: 'Hard',
+                    timeline: '10-12 weeks',
+                    requirements: ['Audio DSP', 'Noise Reduction', 'Signal Processing'],
+                    impact: 'Medium - Detection accuracy improvement'
+                },
+                {
+                    id: 'cross_platform_sync',
+                    name: 'Cross-Platform Data Sync',
+                    brief: 'Seamless experience across all devices',
+                    description: 'Robust synchronization system that maintains consistent user data, preferences, and progress across web, mobile, and PWA versions with offline-first capabilities.',
+                    difficulty: 'Medium',
+                    timeline: '6-8 weeks',
+                    requirements: ['Sync Algorithms', 'Conflict Resolution', 'Offline Storage'],
+                    impact: 'High - User experience continuity'
+                }
+            ],
+            unique: [
+                {
+                    id: 'emotion_based_practice',
+                    name: 'Emotion-Based Practice',
+                    brief: 'Mood-driven song recommendations and therapy',
+                    description: 'AI system that analyzes your emotional state through playing patterns and biometric data, then recommends songs and exercises that match or improve your mood. Includes music therapy applications.',
+                    difficulty: 'Very Hard',
+                    timeline: '16-20 weeks',
+                    requirements: ['Emotion Recognition', 'Biometric Integration', 'Music Psychology'],
+                    impact: 'Very High - Revolutionary wellness integration'
+                },
+                {
+                    id: 'biometric_integration',
+                    name: 'Biometric Feedback Integration',
+                    brief: 'Heart rate and stress monitoring during practice',
+                    description: 'Integration with wearable devices to monitor heart rate, stress levels, and other biometrics during practice. Provides insights into optimal practice conditions and stress management.',
+                    difficulty: 'Hard',
+                    timeline: '12-14 weeks',
+                    requirements: ['Wearable APIs', 'Biometric Analysis', 'Health Integration'],
+                    impact: 'Medium - Health and performance optimization'
+                },
+                {
+                    id: 'ai_practice_coach',
+                    name: 'AI Practice Coach',
+                    brief: 'Natural language coaching with personalized feedback',
+                    description: 'Advanced AI coach that provides natural language feedback, encouragement, and instruction during practice sessions. Includes personality customization and adaptive communication style.',
+                    difficulty: 'Very Hard',
+                    timeline: '18-24 weeks',
+                    requirements: ['Natural Language Processing', 'AI Personality', 'Contextual Understanding'],
+                    impact: 'Very High - Personalized coaching experience'
+                },
+                {
+                    id: 'musical_habit_tracking',
+                    name: 'Musical Habit Psychology',
+                    brief: 'Deep analysis of practice psychology and habit formation',
+                    description: 'Comprehensive habit tracking and psychology analysis system that studies your practice behaviors, identifies patterns, and provides insights for building sustainable musical habits.',
+                    difficulty: 'Hard',
+                    timeline: '10-14 weeks',
+                    requirements: ['Behavioral Analytics', 'Psychology Modeling', 'Habit Tracking'],
+                    impact: 'High - Long-term engagement and success'
+                },
+                {
+                    id: 'skill_transfer_analysis',
+                    name: 'Skill Transfer Analysis',
+                    brief: 'Analyze how skills apply across different songs',
+                    description: 'Advanced analytics that identify how skills learned in one song transfer to others, optimize learning sequences for maximum skill transfer, and predict which songs will be easier based on current abilities.',
+                    difficulty: 'Hard',
+                    timeline: '12-16 weeks',
+                    requirements: ['Skill Modeling', 'Transfer Learning', 'Predictive Analytics'],
+                    impact: 'High - Optimized learning efficiency'
+                }
+            ]
+        };
+
+        let selectedFeatures = new Set();
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            renderAllFeatures();
+            setupEventListeners();
+            updateSelectedCount();
+        });
+
+        function renderAllFeatures() {
+            Object.keys(featuresData).forEach(category => {
+                const container = document.getElementById(`${category}-features`);
+                if (container) {
+                    featuresData[category].forEach(feature => {
+                        const card = createFeatureCard(feature, category);
+                        container.appendChild(card);
+                    });
+                }
+            });
+        }
+
+        function createFeatureCard(feature, category) {
+            const card = document.createElement('div');
+            card.className = 'flip-card';
+            card.dataset.category = category;
+            card.dataset.featureId = feature.id;
+
+            const difficultyClass = `difficulty-${feature.difficulty.toLowerCase()}`;
+            const timelineClass = getTimelineClass(feature.timeline);
+
+            card.innerHTML = `
+                <div class="flip-card-inner">
+                    <div class="flip-card-front ${difficultyClass}">
+                        <div class="selected-indicator" style="display: none;">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="mb-4">
+                            <h3 class="text-lg font-bold mb-2">${feature.name}</h3>
+                            <p class="text-sm text-gray-600 flex-grow">${feature.brief}</p>
+                        </div>
+                        <div class="mt-auto">
+                            <div class="flex justify-between items-center text-xs">
+                                <span class="font-semibold">${feature.difficulty}</span>
+                                <span class="${timelineClass}">${feature.timeline}</span>
+                            </div>
+                        </div>
+                        <input type="checkbox" class="feature-checkbox" data-feature-id="${feature.id}">
+                    </div>
+                    <div class="flip-card-back">
+                        <div class="h-full flex flex-col">
+                            <h3 class="text-lg font-bold mb-3">${feature.name}</h3>
+                            <div class="flex-grow overflow-y-auto">
+                                <p class="text-sm mb-4">${feature.description}</p>
+                                <div class="space-y-2 text-xs">
+                                    <div><strong>Difficulty:</strong> ${feature.difficulty}</div>
+                                    <div><strong>Timeline:</strong> ${feature.timeline}</div>
+                                    <div><strong>Impact:</strong> ${feature.impact}</div>
+                                    <div><strong>Requirements:</strong> ${feature.requirements.join(', ')}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Add click handler for flipping
+            card.addEventListener('click', function(e) {
+                if (e.target.type !== 'checkbox') {
+                    card.classList.toggle('flipped');
+                }
+            });
+
+            // Add checkbox handler
+            const checkbox = card.querySelector('.feature-checkbox');
+            checkbox.addEventListener('change', function(e) {
+                e.stopPropagation();
+                handleFeatureSelection(feature.id, e.target.checked, card);
+            });
+
+            return card;
+        }
+
+        function getTimelineClass(timeline) {
+            if (timeline.includes('2-') || timeline.includes('3-') || timeline.includes('4-')) {
+                return 'timeline-short';
+            } else if (timeline.includes('8-') || timeline.includes('10-') || timeline.includes('12-')) {
+                return 'timeline-long';
+            }
+            return 'timeline-medium';
+        }
+
+        function handleFeatureSelection(featureId, isSelected, cardElement) {
+            const indicator = cardElement.querySelector('.selected-indicator');
+            if (isSelected) {
+                selectedFeatures.add(featureId);
+                indicator.style.display = 'flex';
+                cardElement.classList.add('border-black');
+            } else {
+                selectedFeatures.delete(featureId);
+                indicator.style.display = 'none';
+                cardElement.classList.remove('border-black');
+            }
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const count = selectedFeatures.size;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('exportBtn').disabled = count === 0;
+        }
+
+        function setupEventListeners() {
+            // Select All button
+            document.getElementById('selectAllBtn').addEventListener('click', function() {
+                const visibleCheckboxes = document.querySelectorAll('.flip-card:not([style*="display: none"]) .feature-checkbox');
+                visibleCheckboxes.forEach(checkbox => {
+                    if (!checkbox.checked) {
+                        checkbox.checked = true;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+
+            // Deselect All button
+            document.getElementById('deselectAllBtn').addEventListener('click', function() {
+                const allCheckboxes = document.querySelectorAll('.feature-checkbox:checked');
+                allCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.dispatchEvent(new Event('change'));
+                });
+            });
+
+            // Category filter
+            document.getElementById('categoryFilter').addEventListener('change', function() {
+                const selectedCategory = this.value;
+                const sections = document.querySelectorAll('.category-section');
+
+                sections.forEach(section => {
+                    if (selectedCategory === 'all' || section.dataset.category === selectedCategory) {
+                        section.style.display = 'block';
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+            });
+
+            // Export button
+            document.getElementById('exportBtn').addEventListener('click', exportSelectedFeatures);
+        }
+
+        function exportSelectedFeatures() {
+            const selectedData = {
+                selectedFeatures: [],
+                exportDate: new Date().toISOString().split('T')[0],
+                totalSelected: selectedFeatures.size
+            };
+
+            // Collect all selected features with full data
+            Object.keys(featuresData).forEach(category => {
+                featuresData[category].forEach(feature => {
+                    if (selectedFeatures.has(feature.id)) {
+                        selectedData.selectedFeatures.push({
+                            ...feature,
+                            category: category
+                        });
+                    }
+                });
+            });
+
+            // Create and download JSON file
+            const blob = new Blob([JSON.stringify(selectedData, null, 2)], {
+                type: 'application/json'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `guitartabz-selected-features-${selectedData.exportDate}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+    <script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"rayId":"963edc3e29f386d7","serverTiming":{"name":{"cfExtPri":true,"cfEdge":true,"cfOrigin":true,"cfL4":true,"cfSpeedBrain":true,"cfCacheStatus":true}},"version":"2025.7.0","token":"4edd5f8ec12a48cfa682ab8261b80a79"}' crossorigin="anonymous"></script>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDiYBvmADN6zPxGYDyAteFRhoqrTJRX1aqyI8DbQHAzWgRXeQmuX1FWYpHCxRI%2FrSz3GB6iYy4npgMsZ329oZOITZWvfs3FHM7xlQZZJUlf%2BTUrwyiohTvT6iC8iHxETD%2BakLMO7R0CGq2AR5UyvkTXm35LBwYpOGa%2F%2B%2BnF5nvANhHNBktgaRGAknWvkcyi2Q1xlt6OAG1DW9cw%2FFrUzHi9%2BjkY5q2BFANc5JpLyGN0FpYXIk2ilZuBlnKUDfeojTMqckivjjfW4SO07cg4BuSAKMDXxUtN4QDmFfA8RANVdK2TEwjmifFE7euVMcTJce9DN7%2Faz6SWD4oc%2FXI61%2BzHQrX7CIk7kNgAjaonafq3yIo27QzDMbWK1DckjGo8ere1y5gcYrDgBKmPrS6iwMcmWDYSB5y%2Bt86pqEjE5vNZ0fi%2FF1DHVM41kLUO0qbpuphtlRX879225qBLsyGfFlrNHiQGO9WBRB2AHybm%2FJQ%2BThGr7gidgpMQ4khjE%2BWwkHQ2zQOysTgcxzGo5iyqfkLx8%3D";
+        window.__genspark_locale = "en-US";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDiYBvmADN6zPxGYDyAteFRhoqrTJRX1aqyI8DbQHAzWgRXeQmuX1FWYpHCxRI/rSz3GB6iYy4npgMsZ329oZOITZWvfs3FHM7xlQZZJUlf+TUrwyiohTvT6iC8iHxETD+akLMO7R0CGq2AR5UyvkTXm35LBwYpOGa/++nF5nvANhHNBktgaRGAknWvkcyi2Q1xlt6OAG1DW9cw/FrUzHi9+jkY5q2BFANc5JpLyGN0FpYXIk2ilZuBlnKUDfeojTMqckivjjfW4SO07cg4BuSAKMDXxUtN4QDmFfA8RANVdK2TEwjmifFE7euVMcTJce9DN7/az6SWD4oc/XI61+zHQrX7CIk7kNgAjaonafq3yIo27QzDMbWK1DckjGo8ere1y5gcYrDgBKmPrS6iwMcmWDYSB5y+t86pqEjE5vNZ0fi/F1DHVM41kLUO0qbpuphtlRX879225qBLsyGfFlrNHiQGO9WBRB2AHybm/JQ+ThGr7gidgpMQ4khjE+WwkHQ2zQOysTgcxzGo5iyqfkLx8=";
+    </script>
+    <script id="html_notice_dialog_script" src="https://www.genspark.ai/notice_dialog.js"></script>
+</body>
+</html>

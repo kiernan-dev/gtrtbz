@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guitar Fretboard Map</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #ccc;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .controls label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .controls input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #333;
+            border-radius: 4px;
+            background: #000;
+            color: #fff;
+            width: 300px;
+            margin-right: 10px;
+        }
+
+        .controls input[type="text"]:focus {
+            outline: none;
+            border-color: #fff;
+        }
+
+        .controls button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: 2px solid #fff;
+            border-radius: 4px;
+            background: #fff;
+            color: #000;
+            cursor: pointer;
+            margin: 0 5px;
+            font-weight: bold;
+        }
+
+        .controls button:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .help-text {
+            color: #888;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .fretboard-container {
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 30px;
+        }
+
+        .fretboard {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .fretboard th,
+        .fretboard td {
+            width: 70px;
+            height: 50px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #333;
+            position: relative;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .fretboard th {
+            background: #222;
+            color: #ccc;
+            cursor: default;
+        }
+
+        .fretboard td {
+            background: #000;
+            transition: all 0.2s ease;
+        }
+
+        .fretboard td:hover {
+            background: #333;
+        }
+
+        .fretboard td.active {
+            background: #fff;
+            color: #000;
+        }
+
+        .fretboard td.hidden {
+            color: #333;
+        }
+
+        .string-label {
+            background: #222 !important;
+            color: #fff !important;
+            font-weight: bold;
+            cursor: default !important;
+        }
+
+        .instructions {
+            background: #111;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .instructions h2 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .instructions p {
+            margin-bottom: 10px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+
+        .instructions ul {
+            margin-left: 20px;
+            color: #ccc;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Guitar Fretboard Map</h1>
+        <p class="subtitle">Visualize and explore note positions across the guitar neck</p>
+
+        <div class="controls">
+            <label for="noteInput">Enter Notes:</label>
+            <input type="text" id="noteInput" placeholder="C D G" value="C D G">
+            <button onclick="mapNotes()">Map Notes</button>
+            <button onclick="clearNotes()">Clear</button>
+            <div class="help-text">Supports both sharp (#) and flat (b) notation</div>
+        </div>
+
+        <div class="fretboard-container">
+            <p style="text-align: center; margin-bottom: 10px; color: #ccc;">Click to hear a note. Double click to toggle</p>
+            <table class="fretboard" id="fretboard">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>0</th>
+                        <th>1</th>
+                        <th>2</th>
+                        <th>3</th>
+                        <th>4</th>
+                        <th>5</th>
+                        <th>6</th>
+                        <th>7</th>
+                        <th>8</th>
+                        <th>9</th>
+                        <th>10</th>
+                        <th>11</th>
+                        <th>12</th>
+                    </tr>
+                </thead>
+                <tbody id="fretboardBody">
+                </tbody>
+            </table>
+        </div>
+
+        <div class="instructions">
+            <h2>How to Use</h2>
+            <p>Enter a sequence of notes in the textfield. You will get a map of the notes on the fretboard of your guitar.</p>
+            <p>The fretboard map is interactive, which means you can:</p>
+            <ul>
+                <li><strong>Click on positions</strong> to hear the note</li>
+            </ul>
+            <p>You can use this interactive fretboard map to figure out the best positions to play your chords, bass lines, and riffs.</p>
+        </div>
+    </div>
+
+    <script>
+        // Standard guitar tuning (low to high): E A D G B E
+        const tuning = ['E', 'A', 'D', 'G', 'B', 'E'];
+        const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const stringLabels = ['E', 'B', 'G', 'D', 'A', 'E']; // Display order (high to low)
+        
+        let currentMappedNotes = [];
+        let audioContext = null;
+
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Play a simple tone
+        function playNote(frequency) {
+            initAudio();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.type = 'sawtooth';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1);
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 1);
+        }
+
+        // Get note at string and fret
+        function getNoteAtFret(stringIndex, fret) {
+            const openNote = tuning[stringIndex];
+            const openNoteIndex = noteNames.indexOf(openNote);
+            const noteIndex = (openNoteIndex + fret) % 12;
+            return noteNames[noteIndex];
+        }
+
+        // Get frequency for note
+        function getNoteFrequency(note, octave = 4) {
+            const noteIndex = noteNames.indexOf(note);
+            const A4 = 440;
+            const semitones = noteIndex - 9 + (octave - 4) * 12;
+            return A4 * Math.pow(2, semitones / 12);
+        }
+
+        // Build fretboard
+        function buildFretboard() {
+            const tbody = document.getElementById('fretboardBody');
+            tbody.innerHTML = '';
+
+            // Create rows for each string (high E to low E)
+            for (let stringIndex = 5; stringIndex >= 0; stringIndex--) {
+                const row = document.createElement('tr');
+                
+                // String label
+                const labelCell = document.createElement('td');
+                labelCell.textContent = stringLabels[5 - stringIndex];
+                labelCell.className = 'string-label';
+                row.appendChild(labelCell);
+
+                // Fret cells
+                for (let fret = 0; fret <= 12; fret++) {
+                    const cell = document.createElement('td');
+                    const note = getNoteAtFret(stringIndex, fret);
+                    
+                    cell.textContent = note;
+                    cell.dataset.string = stringIndex;
+                    cell.dataset.fret = fret;
+                    cell.dataset.note = note;
+                    
+                    // Click events
+                    cell.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const freq = getNoteFrequency(note, 3 + Math.floor(stringIndex / 2));
+                        playNote(freq);
+                    });
+
+                    cell.addEventListener('dblclick', function(e) {
+                        e.preventDefault();
+                        toggleNoteVisibility(this);
+                    });
+
+                    row.appendChild(cell);
+                }
+                
+                tbody.appendChild(row);
+            }
+        }
+
+        // Toggle note visibility
+        function toggleNoteVisibility(cell) {
+            if (cell.classList.contains('hidden')) {
+                cell.classList.remove('hidden');
+            } else {
+                cell.classList.add('hidden');
+            }
+        }
+
+        // Normalize note name
+        function normalizeNote(note) {
+            note = note.trim().toUpperCase();
+            
+            // Handle flats
+            if (note.includes('B')) {
+                const flatMap = {
+                    'DB': 'C#', 'EB': 'D#', 'GB': 'F#', 'AB': 'G#', 'BB': 'A#'
+                };
+                if (flatMap[note]) {
+                    return flatMap[note];
+                }
+            }
+            
+            return note;
+        }
+
+        // Map notes on fretboard
+        function mapNotes() {
+            const input = document.getElementById('noteInput').value;
+            const notes = input.split(/\s+/).filter(n => n.length > 0);
+            
+            // Clear previous mapping
+            clearNotes();
+            
+            // Normalize and store notes
+            currentMappedNotes = notes.map(normalizeNote);
+            
+            // Highlight matching notes
+            const cells = document.querySelectorAll('#fretboard td[data-note]');
+            cells.forEach(cell => {
+                const cellNote = cell.dataset.note;
+                if (currentMappedNotes.includes(cellNote)) {
+                    cell.classList.add('active');
+                }
+            });
+        }
+
+        // Clear all notes
+        function clearNotes() {
+            currentMappedNotes = [];
+            const cells = document.querySelectorAll('#fretboard td');
+            cells.forEach(cell => {
+                cell.classList.remove('active', 'hidden');
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            buildFretboard();
+            mapNotes(); // Map initial notes
+        });
+    </script>
+</body>
+</html>

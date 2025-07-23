@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FRET · HERO - Musical Notation Symbols</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    
+    <style>
+        /* Custom brand colors */
+        :root {
+            --fuchsia: #FF2D6A;
+            --violet: #9C3BFF;
+            --neon-cyan: #22F7FF;
+            --deep-navy: #0D0C23;
+            --matte-black: #0B0B0B;
+            --off-white: #F5F5F2;
+        }
+
+        /* Bravura font loading */
+        @font-face {
+            font-family: 'Bravura';
+            src: url('https://cdn.jsdelivr.net/gh/steinbergmedia/bravura@master/redist/otf/Bravura.otf') format('opentype'),
+                 url('https://raw.githubusercontent.com/steinbergmedia/bravura/master/redist/woff/Bravura.woff') format('woff');
+            font-display: swap;
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* Electric gradient */
+        .electric-gradient {
+            background: linear-gradient(90deg, var(--fuchsia) 0%, var(--violet) 50%, var(--neon-cyan) 100%);
+        }
+
+        .electric-gradient-text {
+            background: linear-gradient(90deg, var(--fuchsia) 0%, var(--violet) 50%, var(--neon-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        body {
+            background-color: var(--deep-navy);
+            color: var(--off-white);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .music-symbol {
+            font-family: 'Bravura', 'Arial Unicode MS', serif;
+            font-size: 3rem;
+            line-height: 1;
+            color: var(--off-white);
+            transition: all 0.3s ease;
+        }
+
+        .symbol-card {
+            background: var(--matte-black);
+            border: 1px solid rgba(34, 247, 255, 0.2);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .symbol-card:hover {
+            border-color: var(--fuchsia);
+            box-shadow: 0 0 30px rgba(255, 45, 106, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .symbol-card:hover .music-symbol {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 20px rgba(34, 247, 255, 0.5);
+        }
+
+        .category-title {
+            background: linear-gradient(90deg, var(--fuchsia) 0%, var(--violet) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .accent-text {
+            color: var(--neon-cyan);
+        }
+
+        .font-status {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: var(--matte-black);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--neon-cyan);
+            font-size: 0.8rem;
+            z-index: 1000;
+        }
+
+        .header-strip {
+            height: 8px;
+            background: linear-gradient(90deg, var(--fuchsia) 0%, var(--violet) 50%, var(--neon-cyan) 100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .main-content {
+            margin-top: 2rem;
+            padding: 2rem;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+            
+            .music-symbol {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Electric gradient header strip -->
+    <div class="header-strip"></div>
+    
+    <!-- Font loading status -->
+    <div id="fontStatus" class="font-status">
+        <i class="fas fa-spinner fa-spin"></i> Loading fonts...
+    </div>
+
+    <div class="main-content">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-5xl font-bold electric-gradient-text mb-4">
+                Musical Notation Symbols
+            </h1>
+            <p class="text-xl text-gray-300">
+                🎸 <span class="accent-text">Authentic Symbols</span> • Professional Quality • <span class="accent-text">FRET · HERO</span>
+            </p>
+        </header>
+
+        <!-- Notes & Rests -->
+        <section class="mb-12">
+            <h2 class="category-title">🎵 Notes & Rests</h2>
+            <div class="grid-container">
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE1D2;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Whole Note</h3>
+                    <p class="text-sm text-gray-400">Four beat duration</p>
+                    <code class="text-xs text-gray-500">U+E1D2</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE1D3;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Half Note</h3>
+                    <p class="text-sm text-gray-400">Two beat duration</p>
+                    <code class="text-xs text-gray-500">U+E1D3</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE1D5;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Quarter Note</h3>
+                    <p class="text-sm text-gray-400">One beat duration</p>
+                    <code class="text-xs text-gray-500">U+E1D5</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE1D7;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Eighth Note</h3>
+                    <p class="text-sm text-gray-400">Half beat duration</p>
+                    <code class="text-xs text-gray-500">U+E1D7</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE1D9;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Sixteenth Note</h3>
+                    <p class="text-sm text-gray-400">Quarter beat duration</p>
+                    <code class="text-xs text-gray-500">U+E1D9</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE4E1;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Whole Rest</h3>
+                    <p class="text-sm text-gray-400">Four beat silence</p>
+                    <code class="text-xs text-gray-500">U+E4E1</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE4E2;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Half Rest</h3>
+                    <p class="text-sm text-gray-400">Two beat silence</p>
+                    <code class="text-xs text-gray-500">U+E4E2</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE4E3;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Quarter Rest</h3>
+                    <p class="text-sm text-gray-400">One beat silence</p>
+                    <code class="text-xs text-gray-500">U+E4E3</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- Clefs -->
+        <section class="mb-12">
+            <h2 class="category-title">🎼 Clefs</h2>
+            <div class="grid-container">
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE050;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Treble Clef</h3>
+                    <p class="text-sm text-gray-400">G clef notation</p>
+                    <code class="text-xs text-gray-500">U+E050</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE062;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Bass Clef</h3>
+                    <p class="text-sm text-gray-400">F clef notation</p>
+                    <code class="text-xs text-gray-500">U+E062</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE05C;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Alto Clef</h3>
+                    <p class="text-sm text-gray-400">C clef notation</p>
+                    <code class="text-xs text-gray-500">U+E05C</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- Accidentals -->
+        <section class="mb-12">
+            <h2 class="category-title">♯♭♮ Accidentals</h2>
+            <div class="grid-container">
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE262;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Sharp</h3>
+                    <p class="text-sm text-gray-400">Raise pitch semitone</p>
+                    <code class="text-xs text-gray-500">U+E262</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE260;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Flat</h3>
+                    <p class="text-sm text-gray-400">Lower pitch semitone</p>
+                    <code class="text-xs text-gray-500">U+E260</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE261;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Natural</h3>
+                    <p class="text-sm text-gray-400">Cancel accidental</p>
+                    <code class="text-xs text-gray-500">U+E261</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamics -->
+        <section class="mb-12">
+            <h2 class="category-title">🎭 Dynamics</h2>
+            <div class="grid-container">
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE522;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Forte</h3>
+                    <p class="text-sm text-gray-400">Play loudly</p>
+                    <code class="text-xs text-gray-500">U+E522</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE520;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Piano</h3>
+                    <p class="text-sm text-gray-400">Play softly</p>
+                    <code class="text-xs text-gray-500">U+E520</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE521;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Mezzo</h3>
+                    <p class="text-sm text-gray-400">Medium volume</p>
+                    <code class="text-xs text-gray-500">U+E521</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- Articulations -->
+        <section class="mb-12">
+            <h2 class="category-title">🎯 Articulations</h2>
+            <div class="grid-container">
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE4C0;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Fermata</h3>
+                    <p class="text-sm text-gray-400">Hold & sustain</p>
+                    <code class="text-xs text-gray-500">U+E4C0</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE4A2;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Staccato</h3>
+                    <p class="text-sm text-gray-400">Short & detached</p>
+                    <code class="text-xs text-gray-500">U+E4A2</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE4A0;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Accent</h3>
+                    <p class="text-sm text-gray-400">Emphasize note</p>
+                    <code class="text-xs text-gray-500">U+E4A0</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- Time Signatures -->
+        <section class="mb-12">
+            <h2 class="category-title">⏰ Time Signatures</h2>
+            <div class="grid-container">
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE08A;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Common Time</h3>
+                    <p class="text-sm text-gray-400">4/4 time signature</p>
+                    <code class="text-xs text-gray-500">U+E08A</code>
+                </div>
+                <div class="symbol-card text-center">
+                    <div class="music-symbol mb-4">&#xE08B;</div>
+                    <h3 class="text-lg font-semibold accent-text mb-2">Cut Time</h3>
+                    <p class="text-sm text-gray-400">2/2 time signature</p>
+                    <code class="text-xs text-gray-500">U+E08B</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="text-center pt-8 border-t border-gray-700">
+            <p class="text-gray-400">
+                <span class="accent-text">FRET · HERO</span> • Professional Music Notation • 
+                <a href="https://www.smufl.org/" class="accent-text hover:text-white transition-colors">SMuFL Standard</a>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Font loading detection
+        function checkFontLoaded() {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            // Test with a musical symbol
+            context.font = '72px Bravura';
+            const bravuraWidth = context.measureText('𝄞').width;
+            
+            context.font = '72px serif';
+            const serifWidth = context.measureText('𝄞').width;
+            
+            return bravuraWidth !== serifWidth;
+        }
+
+        function updateFontStatus() {
+            const statusEl = document.getElementById('fontStatus');
+            
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(() => {
+                    if (checkFontLoaded()) {
+                        statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Bravura font loaded';
+                        statusEl.style.borderColor = 'var(--neon-cyan)';
+                        setTimeout(() => {
+                            statusEl.style.opacity = '0';
+                            setTimeout(() => statusEl.remove(), 1000);
+                        }, 2000);
+                    } else {
+                        statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Using fallback fonts';
+                        statusEl.style.borderColor = 'var(--fuchsia)';
+                    }
+                });
+            } else {
+                // Fallback for older browsers
+                setTimeout(() => {
+                    if (checkFontLoaded()) {
+                        statusEl.innerHTML = '<i class="fas fa-check-circle"></i> Bravura font loaded';
+                        statusEl.style.borderColor = 'var(--neon-cyan)';
+                    } else {
+                        statusEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Using fallback fonts';
+                        statusEl.style.borderColor = 'var(--fuchsia)';
+                    }
+                }, 2000);
+            }
+        }
+
+        // Initialize font checking
+        document.addEventListener('DOMContentLoaded', updateFontStatus);
+
+        // Add smooth scrolling and interactive effects
+        document.querySelectorAll('.symbol-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-4px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
