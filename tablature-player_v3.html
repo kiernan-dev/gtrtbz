@@ -400,6 +400,7 @@ E|----------------|"></textarea>
                 this.currentTempo = 120;
                 this.parsedNotes = []; // Store parsed notes for fretboard sync
                 this.currentTexContent = null; // Store current TEX content
+                this.playerReady = false; // Track player readiness
                 
                 this.initializeUI();
                 this.initializeAlphaTab();
@@ -485,9 +486,34 @@ E|----------------|"></textarea>
 
                 // Event listeners
                 this.api.playerReady.on(() => {
+                    console.log('Player ready - audio engine initialized');
+                    this.playerReady = true;
+                    
+                    // Debug player state for playNote functionality
+                    console.log('=== PLAYER READY DEBUG ===');
+                    console.log('Player object:', this.api.player);
+                    console.log('AudioContext available:', this.api.player?.audioContext);
+                    console.log('AudioContext state:', this.api.player?.audioContext?.state);
+                    console.log('Synthesizer available:', this.api.player?.synthesizer);
+                    console.log('Audio output available:', this.api.player?.audioOutput);
+                    console.log('SoundFont loaded:', this.api.player?.soundFontLoaded);
+                    console.log('=== END PLAYER READY DEBUG ===');
+                    
                     document.getElementById('playBtn').disabled = false;
                     document.getElementById('pauseBtn').disabled = false;
                     document.getElementById('stopBtn').disabled = false;
+                });
+
+                this.api.soundFontLoaded.on(() => {
+                    console.log('SoundFont loaded - audio should work now');
+                    this.playerReady = true;
+                    
+                    // Additional SoundFont debug info
+                    console.log('=== SOUNDFONT LOADED DEBUG ===');
+                    console.log('SoundFont load event fired');
+                    console.log('Player ready state:', this.playerReady);
+                    console.log('AudioContext after SoundFont:', this.api.player?.audioContext);
+                    console.log('=== END SOUNDFONT DEBUG ===');
                 });
 
                 this.api.playerStateChanged.on((e) => {
@@ -542,6 +568,128 @@ E|----------------|"></textarea>
                 this.api.playerFinished.on(() => {
                     console.log('Player finished');
                     this.clearFretboardHighlights();
+                });
+
+                // Add click-to-play functionality for rendered tablature
+                this.api.beatMouseDown.on(async (beat) => {
+                    console.log('=== RT CLICK DEBUG ===');
+                    console.log('Beat clicked:', beat);
+                    
+                    if (beat.notes && beat.notes.length > 0) {
+                        const note = beat.notes[0];
+                        
+                        // 1. AudioContext State Verification
+                        console.log('AudioContext state:', this.api.player?.audioContext?.state);
+                        console.log('AudioContext sample rate:', this.api.player?.audioContext?.sampleRate);
+                        console.log('AudioContext destination:', this.api.player?.audioContext?.destination);
+                        
+                        // 2. SoundFont Loading Status
+                        console.log('SoundFont loaded:', this.api.player?.soundFontLoaded);
+                        console.log('Player ready:', this.api.isReady);
+                        console.log('Player state:', this.api.player?.state);
+                        console.log('Player ready tracked:', this.playerReady);
+                        
+                        // 3. Note Object Validation
+                        console.log('Note object details:', {
+                            id: note.id,
+                            fret: note.fret,
+                            string: note.string,
+                            velocity: note.velocity,
+                            duration: note.duration,
+                            beat: note.beat?.id,
+                            track: note.beat?.voice?.bar?.track?.name
+                        });
+                        
+                        // 4. Audio Synthesis Chain Debug
+                        console.log('Synthesizer available:', this.api.player?.synthesizer);
+                        console.log('Audio output active:', this.api.player?.audioOutput);
+                        console.log('Player object:', this.api.player);
+                        
+                        // 5. Audio Buffer/Volume Checks
+                        console.log('Master volume:', this.api.player?.masterVolume);
+                        console.log('Track volume:', note.beat?.voice?.bar?.track?.playbackInfo?.volume);
+                        
+                        // 7. DETAILED PARAMETER LOGGING - Log exactly what we're passing to playNote
+                        console.log('=== DETAILED playNote PARAMETER ANALYSIS ===');
+                        console.log('Raw note parameter being passed to playNote():', note);
+                        console.log('Note parameter type:', typeof note);
+                        console.log('Note parameter constructor:', note.constructor.name);
+                        console.log('Note parameter properties:', Object.getOwnPropertyNames(note));
+                        console.log('Note parameter prototype:', Object.getPrototypeOf(note));
+                        
+                        // Log all note properties individually
+                        for (let prop in note) {
+                            if (note.hasOwnProperty(prop)) {
+                                console.log(`note.${prop}:`, note[prop], `(type: ${typeof note[prop]})`);
+                            }
+                        }
+                        
+                        // Check if note is valid alphaTab Note object
+                        console.log('Note has required alphaTab properties?', {
+                            hasId: 'id' in note,
+                            hasFret: 'fret' in note,
+                            hasString: 'string' in note,
+                            hasBeat: 'beat' in note,
+                            beatType: note.beat ? note.beat.constructor.name : 'none'
+                        });
+                        
+                        // 8. CHECK PLAYER READINESS - Only proceed if player is properly initialized
+                        console.log('Checking player readiness for playNote...');
+                        console.log('Player ready state:', this.playerReady);
+                        console.log('API player object:', this.api.player);
+                        
+                        if (!this.playerReady) {
+                            console.error('❌ RT CLICK FAILED: Player not ready yet. Wait for playerReady event.');
+                            return;
+                        }
+                        
+                        if (!this.api.player) {
+                            console.error('❌ RT CLICK FAILED: API player object not available.');
+                            return;
+                        }
+                        
+                        // 9. ENSURE AUDIOCONTEXT IS RUNNING - Critical for user gesture compliance
+                        if (this.api.player.audioContext && this.api.player.audioContext.state === 'suspended') {
+                            console.log('AudioContext suspended - attempting to resume...');
+                            try {
+                                await this.api.player.audioContext.resume();
+                                console.log('AudioContext resumed successfully');
+                            } catch (error) {
+                                console.error('Failed to resume AudioContext:', error);
+                            }
+                        }
+                        
+                        // Try to play the note
+                        console.log('✅ Prerequisites met - attempting playNote with parameter:', note);
+                        try {
+                            const playNoteResult = this.api.playNote(note);
+                            console.log('playNote call completed - return value:', playNoteResult, '(type:', typeof playNoteResult, ')');
+                            console.log('playNote call completed - checking for audio...');
+                            
+                            // Check if any audio nodes are active after playNote
+                            setTimeout(() => {
+                                console.log('Audio check after 100ms - any sound produced?');
+                            }, 100);
+                            
+                        } catch (error) {
+                            console.error('❌ Error calling playNote:', error);
+                        }
+                        
+                        // 6. Alternative Test - Try playBeat
+                        console.log('Attempting playBeat as alternative...');
+                        try {
+                            this.api.playBeat(beat);
+                            console.log('playBeat call completed');
+                        } catch (error) {
+                            console.error('playBeat also failed:', error);
+                        }
+                        
+                        // Highlight the note on fretboard
+                        const stringIndex = 6 - note.string;
+                        this.highlightFret(stringIndex, note.fret, 800);
+                        
+                        console.log('=== END RT CLICK DEBUG ===');
+                    }
                 });
 
 
@@ -874,23 +1022,123 @@ ${bars.join(' | ')} |
                 }
             }
 
-            playFret(string, fret) {
+            async playFret(string, fret) {
+                console.log('=== FB CLICK DEBUG ===');
+                console.log(`Fretboard clicked: String ${string}, Fret ${fret}`);
+                
                 // Highlight the clicked fret
                 this.highlightFret(string, fret);
                 
-                // Use alphaTab's built-in audio system to play single notes
-                // Create a simple TEX notation for the clicked note and play it briefly
-                if (this.api && this.api.isReady) {
-                    // Convert string index to alphaTab string number (1-6, high E is 1)
-                    const alphaTabString = 6 - string;
-                    const noteTex = `\\tempo 120\n.\n4 ${fret}.${alphaTabString} |`;
-                    
-                    // Temporarily load this single note and play it
-                    this.api.tex(noteTex);
-                    setTimeout(() => {
-                        this.api.playPause();
-                        setTimeout(() => this.api.stop(), 800); // Stop after 800ms
-                    }, 100);
+                // Try to play any note from the score
+                if (this.api && this.api.score && this.api.score.tracks && this.api.score.tracks.length > 0) {
+                    const track = this.api.score.tracks[0];
+                    if (track.staves && track.staves.length > 0) {
+                        const staff = track.staves[0];
+                        
+                        // Find any note to test audio
+                        let anyNote = null;
+                        for (let bar of staff.bars) {
+                            for (let voice of bar.voices) {
+                                for (let beat of voice.beats) {
+                                    if (beat.notes && beat.notes.length > 0) {
+                                        anyNote = beat.notes[0];
+                                        break;
+                                    }
+                                }
+                                if (anyNote) break;
+                            }
+                            if (anyNote) break;
+                        }
+                        
+                        if (anyNote) {
+                            // Same comprehensive debug as RT clicks
+                            console.log('AudioContext state:', this.api.player?.audioContext?.state);
+                            console.log('AudioContext sample rate:', this.api.player?.audioContext?.sampleRate);
+                            console.log('SoundFont loaded:', this.api.player?.soundFontLoaded);
+                            console.log('Player ready:', this.api.isReady);
+                            console.log('Player state:', this.api.player?.state);
+                            
+                            console.log('FB Note to play:', {
+                                id: anyNote.id,
+                                fret: anyNote.fret,
+                                string: anyNote.string,
+                                velocity: anyNote.velocity,
+                                duration: anyNote.duration
+                            });
+                            
+                            console.log('Synthesizer available:', this.api.player?.synthesizer);
+                            console.log('Audio output active:', this.api.player?.audioOutput);
+                            console.log('Master volume:', this.api.player?.masterVolume);
+                            
+                            // FB DETAILED PARAMETER LOGGING - Log exactly what we're passing to playNote
+                            console.log('=== FB DETAILED playNote PARAMETER ANALYSIS ===');
+                            console.log('Raw FB note parameter being passed to playNote():', anyNote);
+                            console.log('FB Note parameter type:', typeof anyNote);
+                            console.log('FB Note parameter constructor:', anyNote.constructor.name);
+                            console.log('FB Note parameter properties:', Object.getOwnPropertyNames(anyNote));
+                            console.log('FB Note parameter prototype:', Object.getPrototypeOf(anyNote));
+                            
+                            // Log all note properties individually
+                            for (let prop in anyNote) {
+                                if (anyNote.hasOwnProperty(prop)) {
+                                    console.log(`FB note.${prop}:`, anyNote[prop], `(type: ${typeof anyNote[prop]})`);
+                                }
+                            }
+                            
+                            // Check if note is valid alphaTab Note object
+                            console.log('FB Note has required alphaTab properties?', {
+                                hasId: 'id' in anyNote,
+                                hasFret: 'fret' in anyNote,
+                                hasString: 'string' in anyNote,
+                                hasBeat: 'beat' in anyNote,
+                                beatType: anyNote.beat ? anyNote.beat.constructor.name : 'none'
+                            });
+                            
+                            // FB PLAYER READINESS CHECK - Same as RT clicks
+                            console.log('Checking FB player readiness for playNote...');
+                            console.log('Player ready state:', this.playerReady);
+                            console.log('API player object:', this.api.player);
+                            
+                            if (!this.playerReady) {
+                                console.error('❌ FB CLICK FAILED: Player not ready yet. Wait for playerReady event.');
+                                return;
+                            }
+                            
+                            if (!this.api.player) {
+                                console.error('❌ FB CLICK FAILED: API player object not available.');
+                                return;
+                            }
+                            
+                            // ENSURE AUDIOCONTEXT IS RUNNING for FB clicks
+                            if (this.api.player.audioContext && this.api.player.audioContext.state === 'suspended') {
+                                console.log('FB AudioContext suspended - attempting to resume...');
+                                try {
+                                    await this.api.player.audioContext.resume();
+                                    console.log('FB AudioContext resumed successfully');
+                                } catch (error) {
+                                    console.error('Failed to resume FB AudioContext:', error);
+                                }
+                            }
+                            
+                            console.log('✅ FB Prerequisites met - attempting playNote with parameter:', anyNote);
+                            try {
+                                const fbPlayNoteResult = this.api.playNote(anyNote);
+                                console.log('FB playNote call completed - return value:', fbPlayNoteResult, '(type:', typeof fbPlayNoteResult, ')');
+                                console.log('FB playNote call completed');
+                                
+                                setTimeout(() => {
+                                    console.log('FB audio check after 100ms - any sound?');
+                                }, 100);
+                                
+                            } catch (error) {
+                                console.error('❌ Error calling FB playNote:', error);
+                            }
+                        } else {
+                            console.log('No notes found in score for FB');
+                        }
+                    }
+                } else {
+                    console.log('No score loaded or API not ready for FB');
                 }
                 
                 // Update chord analysis
@@ -899,6 +1147,8 @@ ${bars.join(' | ')} |
                     const stringNames = ['E', 'A', 'D', 'G', 'B', 'E'];
                     chordAnalysis.textContent = `Clicked: String ${string + 1} (${stringNames[string]}), Fret ${fret}`;
                 }
+                
+                console.log('=== END FB CLICK DEBUG ===');
             }
 
             highlightFret(string, fret, duration = 500) {
