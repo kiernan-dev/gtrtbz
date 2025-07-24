@@ -138,11 +138,20 @@
             position: relative;
         }
 
-        /* Simple alphaTab cursor styling */
+        /* AlphaTab cursor styling using official classes */
         #alphaTab .at-cursor-bar {
-            background: #8B5CF6 !important;
-            opacity: 0.8 !important;
+            background: rgba(139, 92, 246, 0.25) !important; /* Purple bar background */
+        }
+        
+        #alphaTab .at-cursor-beat {
+            background: #8B5CF6 !important; /* Purple cursor line */
             width: 3px !important;
+            opacity: 0.8 !important;
+        }
+        
+        #alphaTab .at-highlight * {
+            fill: #8B5CF6 !important; /* Purple highlight for notes */
+            stroke: #8B5CF6 !important;
         }
 
         /* Responsive tablature container */
@@ -469,7 +478,8 @@ E|----------------|"></textarea>
                         enablePlayer: true,
                         enableCursor: true,
                         enableUserInteraction: true,
-                        soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2'
+                        soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2',
+                        scrollElement: element
                     }
                 });
 
@@ -573,7 +583,8 @@ E|--------3--3--------------|`
 B|------------------------3--|
 G|---------------------2-----|
 D|------------------2--------|
-A|---------------------------|\nE|---------------------------|`
+A|---------------------------|
+E|---------------------------|`
                     },
                     advanced: {
                         title: 'Advanced - Lead Guitar Licks',
@@ -603,7 +614,7 @@ A|--2--2--5--5--7--7--5--2|
 E|--0--0--3--3--5--5--3--0|`
                     },
                     classical: {
-                        title: 'Classical - Ode to Joy (Beethoven)',
+                        title: 'Classical - Ode to Joy',
                         tab: `e|--0--0--1--3--3--1--0---------|
 B|------------------------3--1--|
 G|------------------------------|
@@ -614,11 +625,17 @@ E|------------------------------|`
                 };
 
                 const example = examples[type] || examples.beginner;
-                document.getElementById('tabInput').value = example.tab;
-                this.parseInput();
                 
-                // Update status with example info
-                this.updateStatus(`Loaded: ${example.title}`, 'text-green-400');
+                // Clear input first, then set new content
+                const tabInput = document.getElementById('tabInput');
+                tabInput.value = '';
+                
+                // Force a small delay to ensure the clear takes effect
+                setTimeout(() => {
+                    tabInput.value = example.tab;
+                    this.parseInput();
+                    this.updateStatus(`Loaded: ${example.title}`, 'text-green-400');
+                }, 50);
             }
 
             handleFileUpload(event) {
@@ -657,30 +674,39 @@ E|------------------------------|`
                 }
 
                 this.updateStatus('Parsing tablature...', 'text-yellow-400');
+                console.log('Input to parse:', input);
 
                 try {
                     let texToLoad = null;
                     
-                    // First try alphaTab's built-in parsers for various formats
+                    // Check if it's already TEX notation
                     if (input.includes('\\title') || input.includes('\\tempo') || input.includes(':')) {
-                        // Looks like TEX notation
                         texToLoad = input;
-                    } else if (input.includes('|') && /[0-9]/.test(input) && input.includes('-')) {
-                        // ASCII tablature - try a much simpler TEX approach
+                        console.log('Detected TEX notation');
+                    } 
+                    // Check for ASCII tablature (contains pipes and numbers)
+                    else if (input.includes('|') && /[0-9]/.test(input)) {
+                        console.log('Detected ASCII tablature - converting to TEX');
                         this.parsedNotes = this.extractNotesFromAscii(input);
-                        console.log('Parsed notes for fretboard sync:', this.parsedNotes);
+                        console.log('Extracted notes:', this.parsedNotes);
                         
-                        // Generate ultra-simple TEX - just single notes for now to get it working
-                        texToLoad = this.generateSimpleTex(this.parsedNotes);
-                        console.log('Simple TEX:', texToLoad);
-                    } else {
-                        // Try as generic text format
+                        if (this.parsedNotes.length > 0) {
+                            texToLoad = this.generateSimpleTex(this.parsedNotes);
+                            console.log('Generated TEX:', texToLoad);
+                        } else {
+                            throw new Error('No notes found in ASCII tablature');
+                        }
+                    } 
+                    // Fallback - try as generic text
+                    else {
                         texToLoad = input;
+                        console.log('Trying as generic text format');
                     }
                     
-                    // Store current content for click-to-play restoration
+                    // Store and load the TEX content
                     this.currentTexContent = texToLoad;
                     this.api.tex(texToLoad);
+                    this.updateStatus('Tablature loaded successfully', 'text-green-400');
                 } catch (error) {
                     console.error('Parse error details:', error);
                     this.updateStatus(`Parse error: ${error.message}`, 'text-red-400');
@@ -926,48 +952,56 @@ ${bars.join(' | ')} |
             }
             
             extractNotesFromAscii(ascii) {
-                // Extract note positions from ASCII tablature for fretboard sync
-                const lines = ascii.split('\\n').filter(line => line.trim());
+                console.log('Extracting notes from ASCII:', ascii);
+                
+                // Split by actual newlines, not escaped ones
+                const lines = ascii.split('\n').filter(line => line.trim());
+                console.log('Split lines:', lines);
+                
+                // Find tablature lines (contain numbers and dashes/pipes)
                 const tabLines = lines.filter(line => /[0-9]/.test(line) && /[-|]/.test(line));
+                console.log('Tablature lines found:', tabLines);
+                
                 const notes = [];
                 
-                if (tabLines.length === 0) return notes;
+                if (tabLines.length === 0) {
+                    console.log('No tablature lines found');
+                    return notes;
+                }
                 
-                // Process each string
+                // Process each string (tablature line)
                 for (let stringIndex = 0; stringIndex < Math.min(tabLines.length, 6); stringIndex++) {
                     const line = tabLines[stringIndex];
+                    console.log(`Processing string ${stringIndex}: "${line}"`);
                     
                     for (let pos = 0; pos < line.length; pos++) {
                         const char = line[pos];
                         if (/[0-9]/.test(char)) {
                             let fret = parseInt(char);
                             
-                            // Handle two-digit frets
+                            // Handle two-digit frets (like 12, 15, etc.)
                             if (pos + 1 < line.length && /[0-9]/.test(line[pos + 1])) {
                                 const twoDigitFret = parseInt(char + line[pos + 1]);
-                                if (twoDigitFret <= 24) {
+                                if (twoDigitFret <= 24) { // Max reasonable fret
                                     fret = twoDigitFret;
-                                    pos++;
+                                    pos++; // Skip next character since we used it
                                 }
                             }
                             
-                            // Calculate timing based on position and tempo
-                            // Assume each character represents 1/8 beat at current tempo
-                            const timePerChar = (60 / this.currentTempo) / 8; // seconds per character
-                            const noteTime = pos * timePerChar;
+                            console.log(`Found note: string ${stringIndex}, fret ${fret}, position ${pos}`);
                             
                             notes.push({
                                 string: stringIndex,
                                 fret: fret,
                                 position: pos,
-                                time: noteTime,
-                                duration: timePerChar * 2 // Note duration
+                                time: pos * 0.25 // Simple timing
                             });
                         }
                     }
                 }
                 
-                return notes.sort((a, b) => a.time - b.time);
+                console.log('Total notes extracted:', notes.length);
+                return notes.sort((a, b) => a.position - b.position);
             }
             
             highlightNotesOnFretboard(notes) {
@@ -991,16 +1025,42 @@ ${bars.join(' | ')} |
             }
             
             generateSimpleTex(notes) {
-                // Minimal working example based on what alphaTab expects
-                // Using the absolute simplest format possible
-                
-                return `
-\\title "Test"
+                if (!notes || notes.length === 0) {
+                    return `\\title "Empty"
 \\tempo 120
 
 .
-3.1 2.1 0.1 3.1 2.1 0.1 |
-                `.trim();
+0.1.4 |`;
+                }
+                
+                // Convert parsed notes to correct alphaTex format
+                const texNotes = [];
+                for (let i = 0; i < Math.min(notes.length, 8); i++) { // Limit to 8 notes for testing
+                    const note = notes[i];
+                    
+                    // Convert string index (0-5) to alphaTex string (1-6, where 1 is bottom E, 6 is top E)
+                    // Our string 0 = high E = alphaTex string 6
+                    // Our string 5 = low E = alphaTex string 1
+                    const alphaTexString = 6 - note.string;
+                    
+                    // Validate values
+                    if (note.fret === undefined || note.fret === null || alphaTexString === undefined || alphaTexString === null) {
+                        console.warn(`Invalid note at index ${i}:`, note);
+                        continue;
+                    }
+                    
+                    // Use correct alphaTex format: fret.string.duration
+                    texNotes.push(`${note.fret}.${alphaTexString}.4`);
+                }
+                
+                const texResult = `\\title "Converted Tablature"
+\\tempo 120
+
+.
+${texNotes.join(' ')} |`;
+                
+                console.log('Generated TEX result:', texResult);
+                return texResult;
             }
             
 
