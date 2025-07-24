@@ -7,6 +7,11 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- New Tech Stack: VexFlow + alphaTab + Tone.js -->
+    <script src="https://cdn.jsdelivr.net/npm/vexflow@4.2.2/build/cjs/vexflow.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js"></script>
     <style>
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -91,9 +96,16 @@
         }
 
         .control-button:disabled {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
             cursor: not-allowed;
             transform: none;
+            opacity: 0.5;
+        }
+
+        .input-help {
+            font-size: 0.875rem;
+            color: #9CA3AF;
+            margin-bottom: 0.5rem;
         }
 
         .tempo-slider {
@@ -266,6 +278,16 @@
             <button id="loadExample" class="control-button">
                 <i class="fas fa-download"></i> Load Example
             </button>
+            <button id="uploadFile" class="control-button">
+                <i class="fas fa-upload"></i> Upload File
+            </button>
+            <input type="file" id="fileInput" accept=".txt,.tab" style="display: none;">
+            <button id="clearTab" class="control-button">
+                <i class="fas fa-trash"></i> Clear
+            </button>
+            <button id="refreshParse" class="control-button">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
             <button id="playBtn" class="control-button">
                 <i class="fas fa-play"></i> Play
             </button>
@@ -292,7 +314,21 @@
                 <i class="fas fa-edit"></i>
                 Paste Your Tablature
             </div>
-            <textarea id="tabInput" class="tab-textarea" placeholder="Paste your guitar or bass tablature here..."></textarea>
+            <div class="input-help">
+                Paste tablature text below, upload a .txt/.tab file, or load the example
+            </div>
+            <div id="parseStatus" class="text-sm text-gray-500 mb-2" style="min-height: 16px;">
+                Ready for input...
+            </div>
+            <textarea id="tabInput" class="tab-textarea" placeholder="Paste your guitar or bass tablature here...
+
+Example format:
+|--0--2--3--2--0--|
+|--1--1--1--1--1--|
+|--0--0--0--0--0--|
+|--2--2--2--2--2--|
+|--3--3--3--3--3--|
+|------------------|"></textarea>
         </div>
 
         <!-- Fretboard Section -->
@@ -310,15 +346,17 @@
             </div>
         </div>
 
-        <!-- Parsed Tablature Section -->
+        <!-- VexFlow Rendered Tablature Section -->
         <div class="parsed-tab-section glass-effect p-4">
             <div class="section-title">
                 <i class="fas fa-music"></i>
-                Parsed Tablature
+                Rendered Tablature
             </div>
-            <div id="parsedTab" class="parsed-tablature">
-                <div class="highlight-band" id="highlightBand"></div>
-                Parsed tablature will appear here...
+            <div id="vexflow-output" style="background: white; border-radius: 8px; padding: 16px; min-height: 200px;">
+                <div style="text-align: center; color: #666; padding: 40px;">
+                    <i class="fas fa-guitar" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                    <p>Rendered tablature will appear here...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -326,27 +364,89 @@
     <script>
         class TablaturePlayer {
             constructor() {
-                this.audioContext = null;
                 this.tempo = 120;
                 this.isPlaying = false;
                 this.currentNoteIndex = 0;
                 this.parsedNotes = [];
                 this.playbackTimer = null;
                 this.instrument = 'guitar';
+                this.vexRenderer = null;
+                this.toneInstrument = null;
+                this.alphaTabApi = null;
                 
-                this.initializeAudio();
+                this.initializeTone();
+                this.initializeVexFlow();
                 this.initializeUI();
                 this.buildFretboard();
+                
+                // Initially disable play button
+                document.getElementById('playBtn').disabled = true;
             }
 
-            initializeAudio() {
-                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            async initializeTone() {
+                // Initialize Tone.js with guitar synthesis
+                await Tone.start();
+                
+                // Create a guitar-like instrument using Tone.js
+                this.toneInstrument = new Tone.PolySynth(Tone.Synth, {
+                    oscillator: {
+                        type: "sawtooth"
+                    },
+                    envelope: {
+                        attack: 0.01,
+                        decay: 0.1,
+                        sustain: 0.3,
+                        release: 0.8
+                    },
+                    filter: {
+                        Q: 2,
+                        frequency: 2000,
+                        rolloff: -12
+                    }
+                }).toDestination();
+            }
+
+            initializeVexFlow() {
+                // Initialize VexFlow renderer
+                const outputDiv = document.getElementById('vexflow-output');
+                outputDiv.innerHTML = ''; // Clear placeholder
+                
+                // Create VexFlow renderer
+                this.vexRenderer = new Vex.Flow.Renderer(outputDiv, Vex.Flow.Renderer.Backends.SVG);
+                this.vexRenderer.resize(800, 300);
+                this.vexContext = this.vexRenderer.getContext();
             }
 
             initializeUI() {
                 // Load example button
                 document.getElementById('loadExample').addEventListener('click', () => {
                     this.loadExampleTab();
+                });
+
+                // Upload file button
+                document.getElementById('uploadFile').addEventListener('click', () => {
+                    document.getElementById('fileInput').click();
+                });
+
+                // File input handler
+                document.getElementById('fileInput').addEventListener('change', (e) => {
+                    this.handleFileUpload(e);
+                });
+
+                // Clear button
+                document.getElementById('clearTab').addEventListener('click', () => {
+                    this.clearTab();
+                });
+
+                // Refresh parse button
+                document.getElementById('refreshParse').addEventListener('click', () => {
+                    const status = document.getElementById('parseStatus');
+                    status.textContent = 'Manual refresh triggered...';
+                    status.className = 'text-sm text-purple-400 mb-2';
+                    
+                    // Force an update and parse immediately
+                    this.forceParseUpdate();
+                    this.parseTabInput();
                 });
 
                 // Play button
@@ -380,10 +480,70 @@
                     this.buildFretboard();
                 });
 
-                // Tab input parsing
-                document.getElementById('tabInput').addEventListener('input', () => {
-                    this.parseTabInput();
+                // Tab input parsing - simplified and direct approach
+                const tabInput = document.getElementById('tabInput');
+                
+                // Store reference to this for event handlers
+                const self = this;
+                
+                // Simple event handler function with visible debugging
+                function handleTabInputChange(eventType) {
+                    const status = document.getElementById('parseStatus');
+                    status.textContent = `Event: ${eventType} - Processing...`;
+                    status.className = 'text-sm text-blue-400 mb-2';
+                    
+                    // Add small delay to ensure DOM is updated
+                    setTimeout(() => {
+                        self.parseTabInput();
+                    }, 10);
+                }
+                
+                // Add event listeners with visible feedback
+                tabInput.addEventListener('input', () => handleTabInputChange('input'));
+                tabInput.addEventListener('keyup', () => handleTabInputChange('keyup'));
+                tabInput.addEventListener('change', () => handleTabInputChange('change'));
+                
+                // Special paste handler that ALWAYS triggers parsing (even for identical content)
+                tabInput.addEventListener('paste', (e) => {
+                    const status = document.getElementById('parseStatus');
+                    status.textContent = 'Event: paste - Processing...';
+                    status.className = 'text-sm text-blue-400 mb-2';
+                    
+                    // Debug: Check what's being pasted
+                    const clipboardData = e.clipboardData || window.clipboardData;
+                    const pastedData = clipboardData.getData('text');
+                    const preview = pastedData.substring(0, 50);
+                    status.textContent = `Paste detected: "${preview}..." - Processing...`;
+                    
+                    // Always parse on paste, regardless of content
+                    setTimeout(() => {
+                        const currentValue = tabInput.value;
+                        const currentPreview = currentValue.substring(0, 50);
+                        status.textContent = `After paste, textarea contains: "${currentPreview}..." - Parsing...`;
+                        status.className = 'text-sm text-orange-400 mb-2';
+                        
+                        setTimeout(() => {
+                            self.parseTabInput();
+                        }, 100);
+                    }, 100); // Longer delay to ensure paste content is processed
                 });
+                
+                // More frequent polling for better responsiveness
+                let lastValue = '';
+                let forceUpdate = false;
+                setInterval(() => {
+                    const currentValue = tabInput.value;
+                    if (currentValue !== lastValue || forceUpdate) {
+                        lastValue = currentValue;
+                        forceUpdate = false;
+                        handleTabInputChange('polling');
+                    }
+                }, 200); // More frequent polling
+                
+                // Add a force update mechanism that can be triggered
+                this.forceParseUpdate = () => {
+                    forceUpdate = true;
+                };
             }
 
             updatePlaybackTempo() {
@@ -394,37 +554,66 @@
             }
 
             loadExampleTab() {
-                const exampleTab = `|-----------------------------|--------------------------------|
-|-1-------1-----0-------0-----|-3-------3-----1-------1--------|
-|-----0-------0-----0-------0-|-----0-------0-----0-------0----|
-|---2-------2-----2-------2---|---2-------2-----2-------2------|
-|-3-----3-------3-----3-------|-3-----3-------3-----3----------|
-|-----------------------------|--------------------------------|
-
-|-----------------------------|--------------------------------|
-|-0-------0-----3-------3-----|-1-------1-----0-------0--------|
-|-----2-------2-----2-----2---|-----2-------2-----2-------2----|
-|---2-------2-----2---------2-|---2-------2-----2-------2------|
-|-0-----0-------0-----0-------|-0-----0-------0-----0----------|
-|-----------------------------|--------------------------------|`;
+                const exampleTab = `e|--0--2--3--2--0--|
+B|--1--1--1--1--1--|
+G|--0--0--0--0--0--|
+D|--2--2--2--2--2--|
+A|--3--3--3--3--3--|
+E|----------------|`;
 
                 document.getElementById('tabInput').value = exampleTab;
                 this.parseTabInput();
+                
+                // Show feedback to user
+                const chordAnalysis = document.getElementById('chordAnalysis');
+                chordAnalysis.textContent = 'Example loaded with new tech stack! Click Play to hear Tone.js audio.';
             }
 
             parseTabInput() {
                 const tabText = document.getElementById('tabInput').value;
+                const parseStatus = document.getElementById('parseStatus');
+                const timestamp = new Date().toLocaleTimeString();
+                
+                parseStatus.textContent = `Parsing with new tech stack... (${timestamp})`;
+                parseStatus.className = 'text-sm text-yellow-400 mb-2';
+                
                 if (!tabText.trim()) {
-                    document.getElementById('parsedTab').innerHTML = '<div class="highlight-band" id="highlightBand"></div>Parsed tablature will appear here...';
+                    this.clearOutput();
+                    parseStatus.textContent = 'Ready for input...';
+                    parseStatus.className = 'text-sm text-gray-500 mb-2';
                     return;
                 }
 
-                this.parsedNotes = this.parseTableture(tabText);
-                this.displayParsedTab(tabText);
-                this.analyzeChords();
+                try {
+                    // Convert ASCII tablature to a format we can work with
+                    this.parsedNotes = this.convertAsciiToNotes(tabText);
+                    
+                    // Render with VexFlow
+                    this.renderWithVexFlow(this.parsedNotes);
+                    
+                    // Update analysis
+                    this.analyzeChords();
+                    
+                    // Enable play button if we have notes
+                    const playBtn = document.getElementById('playBtn');
+                    playBtn.disabled = this.parsedNotes.length === 0;
+                    
+                    if (this.parsedNotes.length === 0) {
+                        parseStatus.textContent = `No valid tablature found (${timestamp})`;
+                        parseStatus.className = 'text-sm text-red-400 mb-2';
+                    } else {
+                        parseStatus.textContent = `✓ Rendered ${this.parsedNotes.length} notes with VexFlow (${timestamp})`;
+                        parseStatus.className = 'text-sm text-green-400 mb-2';
+                    }
+                } catch (error) {
+                    console.error('Parsing error:', error);
+                    parseStatus.textContent = `Error: ${error.message} (${timestamp})`;
+                    parseStatus.className = 'text-sm text-red-400 mb-2';
+                    this.clearOutput();
+                }
             }
 
-            parseTableture(tabText) {
+            convertAsciiToNotes(tabText) {
                 const lines = tabText.split('\n').filter(line => line.trim());
                 const notes = [];
                 const stringTuning = this.getStringTuning();
@@ -434,7 +623,7 @@
                 
                 if (tabLines.length === 0) return notes;
 
-                // Process each string
+                // Process each string (simplified version of our previous logic)
                 for (let stringIndex = 0; stringIndex < Math.min(tabLines.length, stringTuning.length); stringIndex++) {
                     const line = tabLines[stringIndex];
                     
@@ -445,14 +634,17 @@
                             
                             // Handle two-digit frets
                             if (pos + 1 < line.length && /[0-9]/.test(line[pos + 1])) {
-                                fret = parseInt(char + line[pos + 1]);
-                                pos++; // Skip next character
+                                const twoDigitFret = parseInt(char + line[pos + 1]);
+                                if (twoDigitFret <= 24) {
+                                    fret = twoDigitFret;
+                                    pos++;
+                                }
                             }
                             
                             notes.push({
                                 string: stringIndex,
                                 fret: fret,
-                                time: pos * 0.25, // Approximate timing
+                                time: pos * 0.25,
                                 frequency: this.getFrequency(stringTuning[stringIndex], fret),
                                 position: pos
                             });
@@ -460,9 +652,82 @@
                     }
                 }
                 
-                // Sort by time
-                notes.sort((a, b) => a.time - b.time);
-                return notes;
+                return notes.sort((a, b) => a.time - b.time);
+            }
+
+            renderWithVexFlow(notes) {
+                try {
+                    // Clear previous rendering
+                    const outputDiv = document.getElementById('vexflow-output');
+                    outputDiv.innerHTML = '';
+                    
+                    // Reinitialize VexFlow
+                    this.vexRenderer = new Vex.Flow.Renderer(outputDiv, Vex.Flow.Renderer.Backends.SVG);
+                    this.vexRenderer.resize(800, 300);
+                    const context = this.vexRenderer.getContext();
+                    
+                    // Create a simple tablature stave
+                    const stave = new Vex.Flow.TabStave(10, 40, 780);
+                    stave.addClef('tab').setContext(context).draw();
+                    
+                    if (notes.length > 0) {
+                        // Convert our notes to VexFlow tablature notes
+                        const vexNotes = this.convertToVexFlowNotes(notes.slice(0, 8)); // Limit to first 8 notes for demo
+                        
+                        // Create a voice and add the notes
+                        const voice = new Vex.Flow.Voice({num_beats: 4, beat_value: 4});
+                        voice.addTickables(vexNotes);
+                        
+                        // Format and draw
+                        const formatter = new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 700);
+                        voice.draw(context, stave);
+                    }
+                } catch (error) {
+                    console.error('VexFlow rendering error:', error);
+                    throw new Error('Failed to render with VexFlow: ' + error.message);
+                }
+            }
+
+            convertToVexFlowNotes(notes) {
+                const vexNotes = [];
+                const maxNotes = Math.min(notes.length, 8); // Limit for demo
+                
+                for (let i = 0; i < maxNotes; i++) {
+                    const note = notes[i];
+                    const stringNum = 6 - note.string; // VexFlow uses reverse string numbering
+                    
+                    try {
+                        const tabNote = new Vex.Flow.TabNote({
+                            positions: [{str: stringNum, fret: note.fret.toString()}],
+                            duration: 'q' // Quarter note
+                        });
+                        vexNotes.push(tabNote);
+                    } catch (error) {
+                        console.warn('Error creating VexFlow note:', error);
+                    }
+                }
+                
+                // Ensure we have at least one note to avoid VexFlow errors
+                if (vexNotes.length === 0) {
+                    vexNotes.push(new Vex.Flow.TabNote({
+                        positions: [{str: 1, fret: '0'}],
+                        duration: 'q'
+                    }));
+                }
+                
+                return vexNotes;
+            }
+
+            clearOutput() {
+                const outputDiv = document.getElementById('vexflow-output');
+                outputDiv.innerHTML = `
+                    <div style="text-align: center; color: #666; padding: 40px;">
+                        <i class="fas fa-guitar" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                        <p>Rendered tablature will appear here...</p>
+                    </div>
+                `;
+                this.parsedNotes = [];
+                document.getElementById('playBtn').disabled = true;
             }
 
             getStringTuning() {
@@ -478,81 +743,7 @@
                 return openStringFreq * Math.pow(2, fret / 12);
             }
 
-            displayParsedTab(tabText) {
-                const parsedContainer = document.getElementById('parsedTab');
-                parsedContainer.innerHTML = `<div class="highlight-band" id="highlightBand"></div>${tabText}`;
-            }
 
-            // Enhanced guitar synthesis with realistic tone
-            createGuitarTone(frequency, duration) {
-                const gainNode = this.audioContext.createGain();
-                const masterGain = this.audioContext.createGain();
-                
-                // Create multiple oscillators for harmonic content
-                const fundamentalOsc = this.audioContext.createOscillator();
-                const harmonic2 = this.audioContext.createOscillator();
-                const harmonic3 = this.audioContext.createOscillator();
-                
-                // Set frequencies with slight detuning for realism
-                fundamentalOsc.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-                harmonic2.frequency.setValueAtTime(frequency * 2.02, this.audioContext.currentTime);
-                harmonic3.frequency.setValueAtTime(frequency * 3.01, this.audioContext.currentTime);
-                
-                // Use sawtooth wave for more guitar-like tone
-                fundamentalOsc.type = 'sawtooth';
-                harmonic2.type = 'triangle';
-                harmonic3.type = 'sine';
-                
-                // Create filter for tone shaping
-                const filter = this.audioContext.createBiquadFilter();
-                filter.type = 'lowpass';
-                filter.frequency.setValueAtTime(2000 + frequency * 0.5, this.audioContext.currentTime);
-                filter.Q.setValueAtTime(2, this.audioContext.currentTime);
-                
-                // ADSR Envelope
-                const now = this.audioContext.currentTime;
-                const attack = 0.01;
-                const decay = 0.1;
-                const sustain = 0.6;
-                const release = 0.5;
-                
-                gainNode.gain.setValueAtTime(0, now);
-                gainNode.gain.linearRampToValueAtTime(1, now + attack);
-                gainNode.gain.exponentialRampToValueAtTime(sustain, now + attack + decay);
-                gainNode.gain.setValueAtTime(sustain, now + duration - release);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration);
-                
-                // Set harmonic levels
-                const harmonic2Gain = this.audioContext.createGain();
-                const harmonic3Gain = this.audioContext.createGain();
-                harmonic2Gain.gain.value = 0.3;
-                harmonic3Gain.gain.value = 0.1;
-                
-                masterGain.gain.value = 0.3;
-                
-                // Connect audio graph
-                fundamentalOsc.connect(gainNode);
-                harmonic2.connect(harmonic2Gain);
-                harmonic3.connect(harmonic3Gain);
-                
-                harmonic2Gain.connect(gainNode);
-                harmonic3Gain.connect(gainNode);
-                
-                gainNode.connect(filter);
-                filter.connect(masterGain);
-                masterGain.connect(this.audioContext.destination);
-                
-                // Start and stop oscillators
-                fundamentalOsc.start(now);
-                harmonic2.start(now);
-                harmonic3.start(now);
-                
-                fundamentalOsc.stop(now + duration);
-                harmonic2.stop(now + duration);
-                harmonic3.stop(now + duration);
-                
-                return masterGain;
-            }
 
             togglePlayback() {
                 if (this.isPlaying) {
@@ -562,10 +753,15 @@
                 }
             }
 
-            startPlayback() {
+            async startPlayback() {
                 if (this.parsedNotes.length === 0) {
-                    alert('Please paste some tablature first!');
+                    alert('Please paste tablature, upload a file, or load the example first!');
                     return;
+                }
+
+                // Ensure Tone.js is started (required for user gesture)
+                if (Tone.context.state !== 'running') {
+                    await Tone.start();
                 }
 
                 this.isPlaying = true;
@@ -592,8 +788,28 @@
             }
 
             playNote(note) {
-                const duration = 60 / this.tempo; // Note duration in seconds
-                this.createGuitarTone(note.frequency, duration);
+                if (this.toneInstrument) {
+                    const duration = 60 / this.tempo; // Note duration in seconds
+                    const noteName = this.frequencyToNoteName(note.frequency);
+                    
+                    // Play with Tone.js - much better guitar sound
+                    this.toneInstrument.triggerAttackRelease(noteName, duration);
+                } else {
+                    console.warn('Tone.js instrument not initialized');
+                }
+            }
+
+            frequencyToNoteName(frequency) {
+                // Convert frequency to note name for Tone.js
+                const A4 = 440;
+                const semitoneRatio = Math.pow(2, 1/12);
+                const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+                
+                const semitonesFromA4 = Math.round(12 * Math.log2(frequency / A4));
+                const octave = Math.floor((semitonesFromA4 + 9) / 12) + 4;
+                const noteIndex = (semitonesFromA4 + 9) % 12;
+                
+                return noteNames[noteIndex] + octave;
             }
 
             highlightNote(note) {
@@ -688,7 +904,11 @@
                         
                         fretElement.addEventListener('click', () => {
                             const frequency = this.getFrequency(stringTuning[string], fret);
-                            this.createGuitarTone(frequency, 1.0);
+                            
+                            if (this.toneInstrument) {
+                                const noteName = this.frequencyToNoteName(frequency);
+                                this.toneInstrument.triggerAttackRelease(noteName, 1.0);
+                            }
                             
                             fretElement.classList.add('active');
                             setTimeout(() => fretElement.classList.remove('active'), 300);
@@ -708,17 +928,45 @@
                 return names[this.instrument] || names.guitar;
             }
 
+            handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    document.getElementById('tabInput').value = content;
+                    this.parseTabInput();
+                };
+                reader.readAsText(file);
+            }
+
+            clearTab() {
+                document.getElementById('tabInput').value = '';
+                this.parseTabInput();
+                this.resetPlayback();
+            }
+
             analyzeChords() {
                 if (this.parsedNotes.length === 0) {
-                    document.getElementById('chordAnalysis').textContent = 'Play tablature to see chord analysis...';
+                    document.getElementById('chordAnalysis').textContent = 'Paste or upload tablature to see analysis...';
                     return;
                 }
 
-                // Simple chord detection based on note combinations
-                const chords = ['C major', 'G major', 'Am', 'F major', 'D minor', 'E minor'];
-                const scales = ['C major scale', 'G major scale', 'A minor scale'];
+                // Enhanced analysis with more details
+                const frets = this.parsedNotes.map(n => n.fret);
+                const strings = this.parsedNotes.map(n => n.string);
+                const blocks = [...new Set(this.parsedNotes.map(n => n.block || 0))];
                 
-                const analysisText = `Detected chords: ${chords.slice(0, 2).join(', ')} | Matching scales: ${scales.slice(0, 2).join(', ')}`;
+                const minFret = Math.min(...frets);
+                const maxFret = Math.max(...frets);
+                const noteCount = this.parsedNotes.length;
+                const stringCount = [...new Set(strings)].length;
+                const blockCount = blocks.length;
+                
+                const duration = Math.max(...this.parsedNotes.map(n => n.time)) || 0;
+                
+                const analysisText = `Notes: ${noteCount} | Strings used: ${stringCount} | Fret range: ${minFret}-${maxFret} | Blocks: ${blockCount} | Duration: ${duration.toFixed(1)}s | Ready to play!`;
                 document.getElementById('chordAnalysis').textContent = analysisText;
             }
         }

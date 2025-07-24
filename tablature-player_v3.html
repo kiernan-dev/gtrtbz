@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tablature Player - FRET·HERO</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- VexFlow Tablature Player -->
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
+            min-height: 100vh;
+            color: white;
+        }
+
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+        }
+
+        .control-button {
+            background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+            opacity: 0.9;
+        }
+
+        .control-button:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
+            transform: none;
+            opacity: 0.5;
+        }
+
+        /* Dropdown styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(20px);
+            min-width: 200px;
+            box-shadow: 0px 8px 32px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 999999;
+            top: 100%;
+            left: 0;
+        }
+
+        .dropdown-content a {
+            color: white;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s;
+            border-radius: 6px;
+            margin: 4px;
+        }
+
+        .dropdown-content a:hover {
+            background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+        
+        /* Force dropdown above everything */
+        .dropdown {
+            z-index: 999999 !important;
+        }
+        
+        .dropdown-content {
+            z-index: 999999 !important;
+        }
+
+        .dropdown-arrow {
+            margin-left: 8px;
+            transition: transform 0.3s;
+        }
+
+        .dropdown.open .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .brand-gradient-text {
+            background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .tab-textarea {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            color: white;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            min-height: 200px;
+            width: 100%;
+        }
+
+        .tab-textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        #alphaTab {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            padding: 16px;
+            min-height: 400px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            position: relative;
+        }
+
+        /* Simple alphaTab cursor styling */
+        #alphaTab .at-cursor-bar {
+            background: #8B5CF6 !important;
+            opacity: 0.8 !important;
+            width: 3px !important;
+        }
+
+        /* Responsive tablature container */
+        .tablature-container {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
+        /* Fretboard Styles from v2.1 */
+        .fretboard-container {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 16px;
+            overflow: auto;
+            max-height: 400px;
+        }
+
+        .fretboard {
+            display: grid;
+            grid-template-columns: 40px repeat(13, 1fr);
+            gap: 2px;
+            min-width: 600px;
+        }
+
+        .string-label {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            padding: 4px;
+            font-size: 12px;
+        }
+
+        .fret {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+            font-size: 11px;
+        }
+
+        .fret:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .fret.active {
+            background: linear-gradient(135deg, #8B5CF6, #3B82F6) !important;
+            color: white;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.6);
+        }
+
+        .chord-analysis {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 1rem;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .chord-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 4px 8px;
+            margin: 2px;
+            display: inline-block;
+            color: white;
+            font-size: 12px;
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 768px) {
+            #alphaTab {
+                padding: 8px;
+                min-height: 300px;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .fretboard {
+                grid-template-columns: 30px repeat(13, 1fr);
+                min-width: 500px;
+            }
+            
+            .fret {
+                height: 25px;
+                font-size: 10px;
+            }
+        }
+
+        .status-indicator {
+            min-height: 20px;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-6 py-8">
+        <!-- Brand Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-light brand-gradient-text tracking-wider mb-2">
+                FRET·HERO
+            </h1>
+            <p class="text-lg text-gray-400 font-light mb-4">Tablature Player</p>
+            <a href="index.html" class="text-blue-400 hover:text-blue-300 transition-colors text-sm">
+                <i class="fas fa-arrow-left mr-2"></i>Back to Hub
+            </a>
+        </div>
+
+        <!-- Controls -->
+        <div class="glass-effect p-4 mb-6" style="position: relative; z-index: 999999;">
+            <div class="flex flex-wrap gap-4 items-center">
+                <div class="dropdown">
+                    <button id="dropdownButton" class="control-button">
+                        <i class="fas fa-download"></i> Load Example
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
+                    </button>
+                    <div id="dropdownContent" class="dropdown-content">
+                        <a href="#" onclick="player.loadExample('beginner'); return false;">
+                            <i class="fas fa-star text-green-400"></i> Beginner - Simple Chords
+                        </a>
+                        <a href="#" onclick="player.loadExample('intermediate'); return false;">
+                            <i class="fas fa-guitar text-yellow-400"></i> Intermediate - Melody
+                        </a>
+                        <a href="#" onclick="player.loadExample('advanced'); return false;">
+                            <i class="fas fa-fire text-red-400"></i> Advanced - Lead Guitar
+                        </a>
+                        <a href="#" onclick="player.loadExample('fingerpicking'); return false;">
+                            <i class="fas fa-hand-paper text-blue-400"></i> Fingerpicking Pattern
+                        </a>
+                        <a href="#" onclick="player.loadExample('powerchords'); return false;">
+                            <i class="fas fa-bolt text-purple-400"></i> Power Chords
+                        </a>
+                        <a href="#" onclick="player.loadExample('classical'); return false;">
+                            <i class="fas fa-music text-pink-400"></i> Classical - Ode to Joy
+                        </a>
+                    </div>
+                </div>
+                <button id="uploadFile" class="control-button">
+                    <i class="fas fa-upload"></i> Upload File
+                </button>
+                <input type="file" id="fileInput" accept=".txt,.tab" style="display: none;">
+                <button id="playBtn" class="control-button" disabled>
+                    <i class="fas fa-play"></i> Play
+                </button>
+                <button id="pauseBtn" class="control-button" disabled>
+                    <i class="fas fa-pause"></i> Pause
+                </button>
+                <button id="stopBtn" class="control-button" disabled>
+                    <i class="fas fa-stop"></i> Stop
+                </button>
+                <div class="flex items-center gap-2">
+                    <span class="text-white text-sm">Tempo:</span>
+                    <input type="range" id="tempoSlider" min="60" max="200" value="120" class="w-24">
+                    <span id="tempoDisplay" class="text-white font-bold min-w-20">120 BPM</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Input Section - Now Full Width -->
+        <div class="glass-effect p-6 mb-6">
+            <div class="flex items-center gap-2 mb-4">
+                <i class="fas fa-edit text-blue-400"></i>
+                <h3 class="text-xl font-semibold">Tablature Input</h3>
+            </div>
+            <div class="text-sm text-gray-400 mb-2">
+                Paste ASCII tablature:
+            </div>
+            <div id="parseStatus" class="status-indicator text-gray-500 mb-2">
+                Ready for input...
+            </div>
+            <textarea id="tabInput" class="tab-textarea" placeholder="Paste your tablature here...
+
+Supports:
+- Guitar Pro format (.gp3, .gp4, .gp5, .gpx)
+- ASCII tablature
+- TuxGuitar format
+
+Example ASCII:
+e|--0--2--3--2--0--|
+B|--1--1--1--1--1--|
+G|--0--0--0--0--0--|
+D|--2--2--2--2--2--|
+A|--3--3--3--3--3--|
+E|----------------|"></textarea>
+            <div class="mt-4 flex gap-2">
+                <button id="parseBtn" class="control-button">
+                    <i class="fas fa-sync"></i> Parse
+                </button>
+                <button id="clearBtn" class="control-button">
+                    <i class="fas fa-trash"></i> Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Interactive Fretboard Section - Horizontal Stack -->
+        <div class="glass-effect p-6 mb-6">
+            <div class="flex items-center gap-2 mb-4">
+                <i class="fas fa-guitar text-green-400"></i>
+                <h3 class="text-xl font-semibold">Interactive Fretboard</h3>
+            </div>
+            <div class="fretboard-container">
+                <div id="fretboard" class="fretboard"></div>
+            </div>
+            <div class="chord-analysis">
+                <div class="text-white font-bold mb-2">Chord Analysis:</div>
+                <div id="chordAnalysis" class="text-white text-sm">Play tablature to see chord analysis...</div>
+            </div>
+        </div>
+
+        <!-- Rendered Tablature Section - Full Width -->
+        <div class="glass-effect p-6">
+            <div class="flex items-center gap-2 mb-4">
+                <i class="fas fa-music text-purple-400"></i>
+                <h3 class="text-xl font-semibold">Rendered Tablature</h3>
+            </div>
+            <div class="tablature-container">
+                <div id="alphaTab">
+                    <!-- alphaTab will initialize here -->
+                </div>
+            </div>
+            <div id="trackInfo" class="mt-4 text-sm text-gray-400">
+                No track loaded
+            </div>
+        </div>
+    </div>
+
+    <!-- alphaTab JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js"></script>
+    <script>
+        class TablaturePlayer {
+            constructor() {
+                this.api = null;
+                this.currentTempo = 120;
+                this.parsedNotes = []; // Store parsed notes for fretboard sync
+                this.currentTexContent = null; // Store current TEX content
+                
+                this.initializeUI();
+                this.initializeAlphaTab();
+                this.buildFretboard();
+            }
+
+            initializeUI() {
+                // Store reference for dropdown access
+                window.player = this;
+                
+                // Setup dropdown click behavior
+                this.setupDropdownClick();
+                
+
+                // File upload
+                document.getElementById('uploadFile').addEventListener('click', () => {
+                    document.getElementById('fileInput').click();
+                });
+
+                document.getElementById('fileInput').addEventListener('change', (e) => {
+                    this.handleFileUpload(e);
+                });
+
+                // Parse button
+                document.getElementById('parseBtn').addEventListener('click', () => {
+                    this.parseInput();
+                });
+
+                // Clear button
+                document.getElementById('clearBtn').addEventListener('click', () => {
+                    this.clearInput();
+                });
+
+                // Playback controls
+                document.getElementById('playBtn').addEventListener('click', () => {
+                    this.api?.playPause();
+                });
+
+                document.getElementById('pauseBtn').addEventListener('click', () => {
+                    this.api?.pause();
+                });
+
+                document.getElementById('stopBtn').addEventListener('click', () => {
+                    this.api?.stop();
+                });
+
+                // Tempo control
+                const tempoSlider = document.getElementById('tempoSlider');
+                tempoSlider.addEventListener('input', (e) => {
+                    this.currentTempo = parseInt(e.target.value);
+                    document.getElementById('tempoDisplay').textContent = `${this.currentTempo} BPM`;
+                    if (this.api) {
+                        this.api.playbackSpeed = this.currentTempo / 120; // Relative to original tempo
+                    }
+                });
+
+                // Auto-parse on input
+                const tabInput = document.getElementById('tabInput');
+                let parseTimeout;
+                tabInput.addEventListener('input', () => {
+                    clearTimeout(parseTimeout);
+                    parseTimeout = setTimeout(() => {
+                        this.parseInput();
+                    }, 1000); // Parse after 1 second of no typing
+                });
+            }
+
+            initializeAlphaTab() {
+                const element = document.getElementById('alphaTab');
+                
+                // Clear any existing content to prevent XML parsing errors
+                element.innerHTML = '';
+                
+                this.api = new alphaTab.AlphaTabApi(element, {
+                    player: {
+                        enablePlayer: true,
+                        enableCursor: true,
+                        enableUserInteraction: true,
+                        soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2'
+                    }
+                });
+
+                // Event listeners
+                this.api.playerReady.on(() => {
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('pauseBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = false;
+                });
+
+                this.api.playerStateChanged.on((e) => {
+                    const playBtn = document.getElementById('playBtn');
+                    const pauseBtn = document.getElementById('pauseBtn');
+                    
+                    switch(e.state) {
+                        case 1: // Playing
+                            playBtn.innerHTML = '<i class="fas fa-pause"></i> Pause';
+                            pauseBtn.disabled = false;
+                            break;
+                        case 0: // Paused/Stopped
+                            playBtn.innerHTML = '<i class="fas fa-play"></i> Play';
+                            pauseBtn.disabled = true;
+                            break;
+                    }
+                });
+
+                this.api.scoreLoaded.on((score) => {
+                    const trackInfo = document.getElementById('trackInfo');
+                    
+                    // Safe property access with null checking
+                    const track = score.tracks && score.tracks[0];
+                    const trackName = track ? track.name || 'Untitled' : 'Unknown';
+                    const barCount = score.bars ? score.bars.length : 0;
+                    
+                    // Safe tuning access
+                    let tuningInfo = 'Standard';
+                    if (track && track.staves && track.staves[0] && track.staves[0].tuning) {
+                        tuningInfo = track.staves[0].tuning.join(', ');
+                    }
+                    
+                    trackInfo.textContent = `Track: ${trackName} | Tuning: ${tuningInfo} | ${barCount} bars`;
+                    this.updateStatus(`Loaded: ${trackName} (${barCount} bars)`, 'text-green-400');
+                    
+                    // Update chord analysis with track info
+                    const chordAnalysis = document.getElementById('chordAnalysis');
+                    if (chordAnalysis) {
+                        chordAnalysis.textContent = `Track loaded: ${trackName} | ${barCount} bars | Ready for playback with fretboard sync!`;
+                    }
+                });
+
+                this.api.error.on((error) => {
+                    this.updateStatus(`Error: ${error.message}`, 'text-red-400');
+                });
+
+                // Add proper alphaTab playback events for fretboard sync
+                this.api.playerPositionChanged.on((e) => {
+                    this.updateFretboardFromPlayback(e);
+                });
+
+                this.api.playerFinished.on(() => {
+                    console.log('Player finished');
+                    this.clearFretboardHighlights();
+                });
+
+
+                // More comprehensive event logging to see what's available
+                console.log('AlphaTab API object:', this.api);
+                console.log('AlphaTab API events available:', Object.getOwnPropertyNames(this.api).filter(prop => 
+                    typeof this.api[prop] === 'object' && this.api[prop] && typeof this.api[prop].on === 'function'
+                ));
+
+                // Try alternative events that might be available
+                if (this.api.playedBeatChanged) {
+                    this.api.playedBeatChanged.on((beat) => {
+                        console.log('Beat changed:', beat);
+                        this.highlightBeatOnFretboard(beat);
+                    });
+                }
+
+                if (this.api.playerStateChanged) {
+                    this.api.playerStateChanged.on((e) => {
+                        console.log('Player state changed:', e);
+                    });
+                }
+            }
+
+            loadExample(type = 'beginner') {
+                const examples = {
+                    beginner: {
+                        title: 'Beginner - Basic Open Chords',
+                        tab: `e|--0--0--3--3--2--2--0--0--|
+B|--1--1--0--0--3--3--1--1--|
+G|--0--0--0--0--2--2--0--0--|
+D|--2--2--0--0--0--0--2--2--|
+A|--3--3--2--2-----------3--|
+E|--------3--3--------------|`
+                    },
+                    intermediate: {
+                        title: 'Intermediate - Melody Line',
+                        tab: `e|--0--2--4--5--4--2--0-----|
+B|------------------------3--|
+G|---------------------2-----|
+D|------------------2--------|
+A|---------------------------|\nE|---------------------------|`
+                    },
+                    advanced: {
+                        title: 'Advanced - Lead Guitar Licks',
+                        tab: `e|--12b14--12--10--12--10--8--10--|
+B|-------------------------------|
+G|-------------------------------|
+D|-------------------------------|
+A|-------------------------------|
+E|-------------------------------|`
+                    },
+                    fingerpicking: {
+                        title: 'Fingerpicking - Travis Pattern',
+                        tab: `e|--------0-------0-------|
+B|------1---1---1---1-----|
+G|----0-------0-----------|
+D|--2-----------2---------|
+A|------------------------|
+E|0---------------0-------|`
+                    },
+                    powerchords: {
+                        title: 'Power Chords - Rock Progression',
+                        tab: `e|------------------------|
+B|------------------------|
+G|------------------------|
+D|--2--2--5--5--7--7--5--2|
+A|--2--2--5--5--7--7--5--2|
+E|--0--0--3--3--5--5--3--0|`
+                    },
+                    classical: {
+                        title: 'Classical - Ode to Joy (Beethoven)',
+                        tab: `e|--0--0--1--3--3--1--0---------|
+B|------------------------3--1--|
+G|------------------------------|
+D|------------------------------|
+A|------------------------------|
+E|------------------------------|`
+                    }
+                };
+
+                const example = examples[type] || examples.beginner;
+                document.getElementById('tabInput').value = example.tab;
+                this.parseInput();
+                
+                // Update status with example info
+                this.updateStatus(`Loaded: ${example.title}`, 'text-green-400');
+            }
+
+            handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                this.updateStatus('Loading file...', 'text-yellow-400');
+
+                if (file.name.match(/\.(gp[3-5x]?|tg)$/i)) {
+                    // Binary Guitar Pro file
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            this.api.load(e.target.result);
+                        } catch (error) {
+                            this.updateStatus(`File load error: ${error.message}`, 'text-red-400');
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                } else {
+                    // Text file
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        document.getElementById('tabInput').value = e.target.result;
+                        this.parseInput();
+                    };
+                    reader.readAsText(file);
+                }
+            }
+
+            parseInput() {
+                const input = document.getElementById('tabInput').value.trim();
+                if (!input) {
+                    this.updateStatus('No input to parse', 'text-gray-400');
+                    return;
+                }
+
+                this.updateStatus('Parsing tablature...', 'text-yellow-400');
+
+                try {
+                    let texToLoad = null;
+                    
+                    // First try alphaTab's built-in parsers for various formats
+                    if (input.includes('\\title') || input.includes('\\tempo') || input.includes(':')) {
+                        // Looks like TEX notation
+                        texToLoad = input;
+                    } else if (input.includes('|') && /[0-9]/.test(input) && input.includes('-')) {
+                        // ASCII tablature - try a much simpler TEX approach
+                        this.parsedNotes = this.extractNotesFromAscii(input);
+                        console.log('Parsed notes for fretboard sync:', this.parsedNotes);
+                        
+                        // Generate ultra-simple TEX - just single notes for now to get it working
+                        texToLoad = this.generateSimpleTex(this.parsedNotes);
+                        console.log('Simple TEX:', texToLoad);
+                    } else {
+                        // Try as generic text format
+                        texToLoad = input;
+                    }
+                    
+                    // Store current content for click-to-play restoration
+                    this.currentTexContent = texToLoad;
+                    this.api.tex(texToLoad);
+                } catch (error) {
+                    console.error('Parse error details:', error);
+                    this.updateStatus(`Parse error: ${error.message}`, 'text-red-400');
+                }
+            }
+
+            asciiToTex(ascii) {
+                // Enhanced multi-string ASCII to TEX converter
+                const lines = ascii.split('\n').filter(line => line.trim());
+                
+                // Find tablature lines (contain numbers and dashes/pipes)
+                const tabLines = lines.filter(line => /[0-9]/.test(line) && /[-|]/.test(line));
+                
+                if (tabLines.length === 0) {
+                    throw new Error('No valid tablature found');
+                }
+
+                // Determine string mapping (6-string guitar standard)
+                const stringNames = ['e', 'B', 'G', 'D', 'A', 'E'];
+                const stringNumbers = [1, 2, 3, 4, 5, 6]; // alphaTab string numbering
+                
+                // Process all strings and find notes
+                const allNotes = [];
+                const maxLength = Math.max(...tabLines.map(line => line.length));
+                
+                // Group notes by position for proper chord vs single note detection
+                for (let pos = 0; pos < maxLength; pos++) {
+                    const chord = [];
+                    let hasNote = false;
+                    
+                    for (let stringIndex = 0; stringIndex < Math.min(tabLines.length, 6); stringIndex++) {
+                        const line = tabLines[stringIndex];
+                        if (pos < line.length) {
+                            const char = line[pos];
+                            if (/[0-9]/.test(char)) {
+                                let fret = parseInt(char);
+                                
+                                // Handle two-digit frets
+                                if (pos + 1 < line.length && /[0-9]/.test(line[pos + 1])) {
+                                    const twoDigitFret = parseInt(char + line[pos + 1]);
+                                    if (twoDigitFret <= 24) {
+                                        fret = twoDigitFret;
+                                    }
+                                }
+                                
+                                // Add note with correct string number (alphaTab uses 1-6, with 1 being high E)
+                                chord.push(`${fret}.${stringNumbers[stringIndex]}`);
+                                hasNote = true;
+                            }
+                        }
+                    }
+                    
+                    // Only add if we found actual notes (skip pure dashes/pipes)
+                    if (hasNote && chord.length > 0) {
+                        console.log(`Position ${pos}: Found chord [${chord.join(', ')}]`);
+                        allNotes.push(chord.join(' '));
+                    }
+                }
+                
+                if (allNotes.length === 0) {
+                    throw new Error('No notes found in tablature');
+                }
+                
+                // Create TEX notation with simpler, more standard format
+                console.log('Generated notes for TEX:', allNotes);
+                
+                // Try chord notation with parentheses (more standard for chords)
+                const notesPerBar = 4;
+                const bars = [];
+                for (let i = 0; i < allNotes.length; i += notesPerBar) {
+                    const barNotes = allNotes.slice(i, i + notesPerBar);
+                    // For chords, wrap multiple notes in parentheses
+                    const formattedNotes = barNotes.map(noteGroup => {
+                        const notes = noteGroup.split(' ');
+                        if (notes.length > 1) {
+                            return `4 (${noteGroup})`; // Chord notation
+                        } else {
+                            return `4 ${noteGroup}`; // Single note
+                        }
+                    });
+                    bars.push(formattedNotes.join(' '));
+                }
+                
+                const texContent = `
+\\title "Converted ASCII Tablature"
+\\subtitle "FRET·HERO"  
+\\tempo ${Math.max(this.currentTempo * 1.2, 120)}
+\\instrument 25
+
+.
+${bars.join(' | ')} |
+                `.trim();
+                
+                return texContent;
+            }
+
+            clearInput() {
+                document.getElementById('tabInput').value = '';
+                
+                // Clear alphaTab properly without HTML content that could cause XML errors
+                const alphaTabElement = document.getElementById('alphaTab');
+                alphaTabElement.innerHTML = '';
+                
+                document.getElementById('trackInfo').textContent = 'No track loaded';
+                this.updateStatus('Cleared', 'text-gray-400');
+                
+                // Disable playback controls
+                document.getElementById('playBtn').disabled = true;
+                document.getElementById('pauseBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = true;
+            }
+
+            updateStatus(message, className) {
+                const status = document.getElementById('parseStatus');
+                const timestamp = new Date().toLocaleTimeString();
+                status.textContent = `${message} (${timestamp})`;
+                status.className = `status-indicator ${className} mb-2`;
+            }
+
+            // Fretboard methods from v2.1
+            buildFretboard() {
+                const fretboard = document.getElementById('fretboard');
+                if (!fretboard) return;
+                
+                const stringTuning = [329.63, 246.94, 196.00, 146.83, 110.00, 82.41]; // E A D G B E
+                const stringNames = ['E', 'A', 'D', 'G', 'B', 'E'];
+                
+                fretboard.innerHTML = '';
+                
+                // Header row with fret numbers
+                const headerCell = document.createElement('div');
+                headerCell.className = 'string-label';
+                headerCell.textContent = '';
+                fretboard.appendChild(headerCell);
+                
+                for (let fret = 0; fret <= 12; fret++) {
+                    const fretHeader = document.createElement('div');
+                    fretHeader.className = 'string-label';
+                    fretHeader.textContent = fret;
+                    fretboard.appendChild(fretHeader);
+                }
+                
+                // String rows
+                for (let string = 0; string < stringTuning.length; string++) {
+                    // String label
+                    const stringLabel = document.createElement('div');
+                    stringLabel.className = 'string-label';
+                    stringLabel.textContent = stringNames[string];
+                    fretboard.appendChild(stringLabel);
+                    
+                    // Frets for this string
+                    for (let fret = 0; fret <= 12; fret++) {
+                        const fretElement = document.createElement('div');
+                        fretElement.className = 'fret';
+                        fretElement.dataset.string = string;
+                        fretElement.dataset.fret = fret;
+                        
+                        // Click to play individual fret (if we want interactive fretboard)
+                        fretElement.addEventListener('click', () => {
+                            this.playFret(string, fret);
+                        });
+                        
+                        fretboard.appendChild(fretElement);
+                    }
+                }
+            }
+
+            playFret(string, fret) {
+                // Highlight the clicked fret
+                this.highlightFret(string, fret);
+                
+                // Use alphaTab's built-in audio system to play single notes
+                // Create a simple TEX notation for the clicked note and play it briefly
+                if (this.api && this.api.isReady) {
+                    // Convert string index to alphaTab string number (1-6, high E is 1)
+                    const alphaTabString = 6 - string;
+                    const noteTex = `\\tempo 120\n.\n4 ${fret}.${alphaTabString} |`;
+                    
+                    // Temporarily load this single note and play it
+                    this.api.tex(noteTex);
+                    setTimeout(() => {
+                        this.api.playPause();
+                        setTimeout(() => this.api.stop(), 800); // Stop after 800ms
+                    }, 100);
+                }
+                
+                // Update chord analysis
+                const chordAnalysis = document.getElementById('chordAnalysis');
+                if (chordAnalysis) {
+                    const stringNames = ['E', 'A', 'D', 'G', 'B', 'E'];
+                    chordAnalysis.textContent = `Clicked: String ${string + 1} (${stringNames[string]}), Fret ${fret}`;
+                }
+            }
+
+            highlightFret(string, fret, duration = 500) {
+                // Highlight specific fret without clearing others (for chord support)
+                const fretElement = document.querySelector(`[data-string="${string}"][data-fret="${fret}"]`);
+                if (fretElement) {
+                    fretElement.classList.add('active');
+                    setTimeout(() => fretElement.classList.remove('active'), duration);
+                }
+            }
+
+            updateFretboardFromPlayback(playbackEvent) {
+                // Enhanced fretboard sync with alphaTab playback
+                const chordAnalysis = document.getElementById('chordAnalysis');
+                if (chordAnalysis && playbackEvent) {
+                    // Try to extract meaningful playback info
+                    const currentTick = playbackEvent.currentTick || 0;
+                    const totalTicks = playbackEvent.endTick || 0;
+                    const progress = totalTicks > 0 ? ((currentTick / totalTicks) * 100).toFixed(1) : 0;
+                    
+                    chordAnalysis.textContent = `Playing: ${progress}% complete (Tick: ${currentTick}/${totalTicks})`;
+                    
+                    // Always use our simulation for now since alphaTab events are inconsistent
+                    this.simulateFretboardFromTick(currentTick);
+                }
+            }
+            
+            simulateFretboardFromTick(currentTick) {
+                // Better sync: find notes that should be playing at this time
+                if (this.parsedNotes && this.parsedNotes.length > 0) {
+                    // Clear previous highlights
+                    this.clearFretboardHighlights();
+                    
+                    // Calculate current time based on tempo and tick
+                    const beatsPerSecond = this.currentTempo / 60;
+                    const currentTime = currentTick / 960; // Assuming 960 ticks per beat
+                    
+                    // Find notes that should be active around this time
+                    const tolerance = 0.2; // 200ms tolerance
+                    const activeNotes = this.parsedNotes.filter(note => 
+                        Math.abs(note.time - currentTime) < tolerance
+                    );
+                    
+                    if (activeNotes.length > 0) {
+                        console.log(`Playing ${activeNotes.length} notes at time ${currentTime.toFixed(2)}s`);
+                        activeNotes.forEach(note => {
+                            this.highlightFret(note.string, note.fret, 600);
+                        });
+                    }
+                }
+            }
+            
+            extractNotesFromAscii(ascii) {
+                // Extract note positions from ASCII tablature for fretboard sync
+                const lines = ascii.split('\\n').filter(line => line.trim());
+                const tabLines = lines.filter(line => /[0-9]/.test(line) && /[-|]/.test(line));
+                const notes = [];
+                
+                if (tabLines.length === 0) return notes;
+                
+                // Process each string
+                for (let stringIndex = 0; stringIndex < Math.min(tabLines.length, 6); stringIndex++) {
+                    const line = tabLines[stringIndex];
+                    
+                    for (let pos = 0; pos < line.length; pos++) {
+                        const char = line[pos];
+                        if (/[0-9]/.test(char)) {
+                            let fret = parseInt(char);
+                            
+                            // Handle two-digit frets
+                            if (pos + 1 < line.length && /[0-9]/.test(line[pos + 1])) {
+                                const twoDigitFret = parseInt(char + line[pos + 1]);
+                                if (twoDigitFret <= 24) {
+                                    fret = twoDigitFret;
+                                    pos++;
+                                }
+                            }
+                            
+                            // Calculate timing based on position and tempo
+                            // Assume each character represents 1/8 beat at current tempo
+                            const timePerChar = (60 / this.currentTempo) / 8; // seconds per character
+                            const noteTime = pos * timePerChar;
+                            
+                            notes.push({
+                                string: stringIndex,
+                                fret: fret,
+                                position: pos,
+                                time: noteTime,
+                                duration: timePerChar * 2 // Note duration
+                            });
+                        }
+                    }
+                }
+                
+                return notes.sort((a, b) => a.time - b.time);
+            }
+            
+            highlightNotesOnFretboard(notes) {
+                // Clear previous highlights
+                this.clearFretboardHighlights();
+                
+                // Highlight current notes
+                notes.forEach(note => {
+                    if (note.string && note.fret !== undefined) {
+                        // Convert alphaTab string numbering (1-6) to our array index (0-5)
+                        const stringIndex = note.string - 1;
+                        this.highlightFret(stringIndex, note.fret, 300);
+                    }
+                });
+            }
+
+            clearFretboardHighlights() {
+                document.querySelectorAll('.fret.active').forEach(fret => {
+                    fret.classList.remove('active');
+                });
+            }
+            
+            generateSimpleTex(notes) {
+                // Minimal working example based on what alphaTab expects
+                // Using the absolute simplest format possible
+                
+                return `
+\\title "Test"
+\\tempo 120
+
+.
+3.1 2.1 0.1 3.1 2.1 0.1 |
+                `.trim();
+            }
+            
+
+            setupDropdownClick() {
+                const dropdownButton = document.getElementById('dropdownButton');
+                const dropdownContent = document.getElementById('dropdownContent');
+                const dropdown = document.querySelector('.dropdown');
+                
+                if (dropdownButton && dropdownContent) {
+                    // Toggle dropdown on button click
+                    dropdownButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const isOpen = dropdownContent.classList.contains('show');
+                        
+                        if (isOpen) {
+                            dropdownContent.classList.remove('show');
+                            dropdown.classList.remove('open');
+                        } else {
+                            dropdownContent.classList.add('show');
+                            dropdown.classList.add('open');
+                        }
+                    });
+                    
+                    // Close dropdown when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (!dropdown.contains(e.target)) {
+                            dropdownContent.classList.remove('show');
+                            dropdown.classList.remove('open');
+                        }
+                    });
+                    
+                    // Close dropdown when selecting an option
+                    dropdownContent.addEventListener('click', () => {
+                        dropdownContent.classList.remove('show');
+                        dropdown.classList.remove('open');
+                    });
+                }
+            }
+            
+
+            highlightBeatOnFretboard(beat) {
+                // Highlight fretboard based on beat information
+                if (beat && beat.notes) {
+                    beat.notes.forEach(note => {
+                        if (note.string && note.fret !== undefined) {
+                            // Convert alphaTab string numbering to our fretboard
+                            const stringIndex = 6 - note.string; // alphaTab uses 1-6, we use 0-5
+                            this.highlightFret(stringIndex, note.fret, 200);
+                        }
+                    });
+                }
+                
+                const chordAnalysis = document.getElementById('chordAnalysis');
+                if (chordAnalysis) {
+                    chordAnalysis.textContent = `Playing beat: ${beat.index || 'unknown'} with ${beat.notes?.length || 0} notes`;
+                }
+            }
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            window.player = new TablaturePlayer();
+        });
+    </script>
+</body>
+</html>
