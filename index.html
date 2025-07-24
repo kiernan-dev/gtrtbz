@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GuitarTabz - Music Tech Hub</title>
+    <title>FRET·HERO - Music Tech Hub</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0a;
             min-height: 100vh;
         }
 
         .glass-effect {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
         }
 
         .card-hover {
@@ -30,7 +31,18 @@
         }
 
         .category-header {
-            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            background: linear-gradient(90deg, #8B5CF6, #3B82F6);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .brand-gradient {
+            background: linear-gradient(135deg, #8B5CF6, #3B82F6);
+        }
+        
+        .brand-gradient-text {
+            background: linear-gradient(135deg, #8B5CF6, #3B82F6);
             background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -41,11 +53,10 @@
     <div class="container mx-auto px-6 py-8">
         <!-- Header -->
         <div class="text-center mb-12">
-            <h1 class="text-5xl font-bold mb-4">
-                <i class="fas fa-guitar text-yellow-400 mr-4"></i>
-                GuitarTabz
+            <h1 class="text-6xl font-light mb-4 brand-gradient-text tracking-wider">
+                FRET·HERO
             </h1>
-            <p class="text-xl text-gray-300">Your Complete Music Technology Suite</p>
+            <p class="text-xl text-gray-400 font-light">Your Complete Music Technology Suite</p>
         </div>
 
         <!-- Interactive Tools Section -->
@@ -60,9 +71,9 @@
                         <i class="fas fa-music text-4xl text-blue-400 mb-4"></i>
                         <h3 class="text-xl font-semibold mb-3">Tablature Player</h3>
                         <p class="text-gray-300 mb-4">Enhanced audio and highlighting for guitar tablatures</p>
-                        <a href="tablature-player_v2.1.html" class="inline-block bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors">
+                        <button class="brand-gradient hover:opacity-90 px-6 py-2 rounded-lg transition-all font-medium text-white">
                             Launch Player
-                        </a>
+                        </button>
                     </div>
                 </div>
 
@@ -71,9 +82,9 @@
                         <i class="fas fa-map text-4xl text-green-400 mb-4"></i>
                         <h3 class="text-xl font-semibold mb-3">Fretboard Map</h3>
                         <p class="text-gray-300 mb-4">Interactive guitar fretboard visualization and mapping</p>
-                        <a href="interactive-fretboard-map_v6.html" class="inline-block bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg transition-colors">
+                        <button class="brand-gradient hover:opacity-90 px-6 py-2 rounded-lg transition-all font-medium text-white">
                             Open Map
-                        </a>
+                        </button>
                     </div>
                 </div>
 
@@ -82,9 +93,9 @@
                         <i class="fas fa-sliders-h text-4xl text-purple-400 mb-4"></i>
                         <h3 class="text-xl font-semibold mb-3">Feature Selector</h3>
                         <p class="text-gray-300 mb-4">Interactive feature selection and customization tool</p>
-                        <a href="GuitarTabz-Feature-Selector.html" class="inline-block bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg transition-colors">
+                        <button class="brand-gradient hover:opacity-90 px-6 py-2 rounded-lg transition-all font-medium text-white">
                             Configure
-                        </a>
+                        </button>
                     </div>
                 </div>
 
@@ -93,9 +104,9 @@
                         <i class="fas fa-wave-square text-4xl text-red-400 mb-4"></i>
                         <h3 class="text-xl font-semibold mb-3">Audio Visualizer</h3>
                         <p class="text-gray-300 mb-4">Music audio visualization and analysis tool</p>
-                        <a href="Muzik-Audio-Vizualizer.html" class="inline-block bg-red-600 hover:bg-red-700 px-6 py-2 rounded-lg transition-colors">
+                        <button class="brand-gradient hover:opacity-90 px-6 py-2 rounded-lg transition-all font-medium text-white">
                             Visualize
-                        </a>
+                        </button>
                     </div>
                 </div>
 
@@ -104,9 +115,9 @@
                         <i class="fas fa-music text-4xl text-yellow-400 mb-4"></i>
                         <h3 class="text-xl font-semibold mb-3">Musical Notation</h3>
                         <p class="text-gray-300 mb-4">FretHero musical notation symbols and theory</p>
-                        <a href="FretHero_musical-notation-symbols.html" class="inline-block bg-yellow-600 hover:bg-yellow-700 px-6 py-2 rounded-lg transition-colors">
+                        <button class="brand-gradient hover:opacity-90 px-6 py-2 rounded-lg transition-all font-medium text-white">
                             Learn Notation
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -124,9 +135,9 @@
                         <i class="fas fa-cogs text-4xl text-indigo-400 mb-4"></i>
                         <h3 class="text-xl font-semibold mb-3">Performance Architecture</h3>
                         <p class="text-gray-300 mb-4">Technical documentation for performance-first architecture</p>
-                        <a href="GuitarTabz-Performance-First-Architecture.html" class="inline-block bg-indigo-600 hover:bg-indigo-700 px-6 py-2 rounded-lg transition-colors">
+                        <button class="brand-gradient hover:opacity-90 px-6 py-2 rounded-lg transition-all font-medium text-white">
                             View Docs
-                        </a>
+                        </button>
                     </div>
                 </div>
 
@@ -135,9 +146,9 @@
                         <i class="fas fa-chart-line text-4xl text-teal-400 mb-4"></i>
                         <h3 class="text-xl font-semibold mb-3">Business Plan</h3>
                         <p class="text-gray-300 mb-4">Comprehensive business strategy and roadmap</p>
-                        <a href="GuitarTabz-BusinessPlan.html" class="inline-block bg-teal-600 hover:bg-teal-700 px-6 py-2 rounded-lg transition-colors">
+                        <button class="brand-gradient hover:opacity-90 px-6 py-2 rounded-lg transition-all font-medium text-white">
                             Read Plan
-                        </a>
+                        </button>
                     </div>
                 </div>
 
@@ -146,9 +157,9 @@
                         <i class="fas fa-database text-4xl text-pink-400 mb-4"></i>
                         <h3 class="text-xl font-semibold mb-3">Music-Tech SaaS Compendium</h3>
                         <p class="text-gray-300 mb-4">Complete guide to music technology SaaS solutions</p>
-                        <a href="The Complete Music-Tech SaaS Compendium.html" class="inline-block bg-pink-600 hover:bg-pink-700 px-6 py-2 rounded-lg transition-colors">
+                        <button class="brand-gradient hover:opacity-90 px-6 py-2 rounded-lg transition-all font-medium text-white">
                             Explore Compendium
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>
